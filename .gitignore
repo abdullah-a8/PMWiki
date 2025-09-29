@@ -7,7 +7,9 @@ wheels/
 *.egg-info
 
 # Virtual environments
-.venv
+.venv/
+venv/
+env/
 
 # Project data directory: ignore contents but keep folder structure with .gitkeep
 data/*
@@ -17,6 +19,37 @@ data/raw/*
 data/processed/*
 !data/processed/.gitkeep
 
+# Environment and config files
 .env
+.env.*
+!.env.example
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Local documentation and configs
 Local Docs/
 .claude/

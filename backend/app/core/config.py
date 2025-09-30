@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     VOYAGE_API_KEY: str
 
     # CORS
-    ALLOWED_HOSTS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    ALLOWED_HOSTS: List[str] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:8000"]
 
     # Rate Limiting
     GROQ_RATE_LIMIT: int = 1000  # requests per day

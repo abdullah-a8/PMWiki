@@ -53,3 +53,4 @@ logs/
 # Local documentation and configs
 Local Docs/
 .claude/
+backend/LocalTestFiles/

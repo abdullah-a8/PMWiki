@@ -2,7 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.routers import search, citations, comparisons, health
+from app.routers import search, health, comparisons, process
+# TODO: Re-enable after implementing schemas
+# from app.routers import citations
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -23,8 +25,10 @@ app.add_middleware(
 # Include routers
 app.include_router(health.router, tags=["health"])
 app.include_router(search.router, prefix=settings.API_V1_STR, tags=["search"])
-app.include_router(citations.router, prefix=settings.API_V1_STR, tags=["citations"])
 app.include_router(comparisons.router, prefix=settings.API_V1_STR, tags=["comparisons"])
+app.include_router(process.router, prefix=settings.API_V1_STR, tags=["process"])
+# TODO: Re-enable after implementing Phase 3.2 citations management
+# app.include_router(citations.router, prefix=settings.API_V1_STR, tags=["citations"])
 
 
 @app.get("/")

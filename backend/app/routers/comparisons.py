@@ -1,82 +1,400 @@
-from fastapi import APIRouter, Depends, HTTPException
-from typing import List
-from app.schemas.comparisons import TopicComparisonRequest, SectionComparisonRequest, ComparisonResponse
-from app.services.comparisons import ComparisonService
-from app.dependencies import get_db, get_groq_client, get_qdrant_client
+"""
+Comparison endpoints router
+Handles topic comparisons, section comparisons, and similarity searches
+"""
+from fastapi import APIRouter, Depends, HTTPException, status, Path
 from sqlalchemy.orm import Session
+from sqlalchemy import text
+import logging
+
+from app.schemas.comparison import (
+    ComparisonRequest,
+    ComparisonResponse,
+    SectionComparisonRequest,
+    SectionComparisonResponse,
+    SimilarSectionsRequest,
+    SimilarSectionsResponse,
+    SectionDetail,
+    SimilarSection
+)
+from app.services.rag_service import get_rag_service
+from app.services.groq_service import get_groq_service
+from app.services.qdrant_service import get_qdrant_service
+from app.db.database import get_db
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-@router.get("/compare/{topic}", response_model=ComparisonResponse)
-async def compare_topic_across_standards(
-    topic: str,
-    db: Session = Depends(get_db),
-    groq_client=Depends(get_groq_client),
-    qdrant_client=Depends(get_qdrant_client)
+@router.post(
+    "/compare",
+    response_model=ComparisonResponse,
+    summary="Compare topic across all standards",
+    description="""
+    Compare how PMBOK, PRINCE2, and ISO 21502 address a specific topic.
+
+    Returns:
+    - LLM-generated comparison analysis (Similarities, Differences, Unique Elements)
+    - Source references from each standard
+    - Token usage statistics
+
+    Example topics: "Risk Management", "Stakeholder Engagement", "Quality Assurance"
+    """,
+    response_description="Comprehensive cross-standard comparison"
+)
+async def compare_topic(
+    request: ComparisonRequest,
+    db: Session = Depends(get_db)
 ):
-    """Compare how a specific topic is handled across PMBOK, PRINCE2, and ISO 21502"""
-    comparison_service = ComparisonService(db, groq_client, qdrant_client)
+    """
+    Compare how all three standards address a specific topic.
+
+    This endpoint:
+    1. Searches for relevant sections in each standard
+    2. Sends context to LLM for comparative analysis
+    3. Returns structured comparison with sources
+    """
     try:
-        comparison = await comparison_service.compare_topic(topic=topic)
-        return comparison
+        logger.info(f"Topic comparison request: '{request.topic}'")
+
+        # Get RAG service
+        rag_service = get_rag_service()
+
+        # Perform comparison
+        result = rag_service.compare_standards(
+            topic=request.topic,
+            db_session=db,
+            top_k_per_standard=request.top_k_per_standard,
+            score_threshold=request.score_threshold
+        )
+
+        logger.info(f"Comparison completed for topic: '{request.topic}'")
+        return result
+
+    except ValueError as e:
+        logger.error(f"Validation error in comparison: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid request: {str(e)}"
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Topic comparison failed: {str(e)}")
+        logger.error(f"Comparison failed for topic '{request.topic}': {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Comparison operation failed. Please try again later."
+        )
 
 
-@router.post("/compare-sections", response_model=ComparisonResponse)
-async def compare_specific_sections(
+@router.post(
+    "/compare-sections",
+    response_model=SectionComparisonResponse,
+    summary="Compare specific sections directly",
+    description="""
+    Perform direct comparison between 2-3 specific sections.
+
+    Returns:
+    - Section details for each section
+    - LLM-generated comparative analysis
+    - Token usage statistics
+
+    Use this for deep-dive comparison of specific sections you've identified.
+    """,
+    response_description="Direct section-to-section comparison"
+)
+async def compare_sections(
     request: SectionComparisonRequest,
-    db: Session = Depends(get_db),
-    groq_client=Depends(get_groq_client)
+    db: Session = Depends(get_db)
 ):
-    """Compare specific sections from different standards"""
-    comparison_service = ComparisonService(db, groq_client, None)
+    """
+    Compare specific sections from different (or same) standards.
+
+    This endpoint allows precise comparison of sections identified by UUID.
+    """
     try:
-        comparison = await comparison_service.compare_sections(
-            section_ids=request.section_ids,
-            comparison_type=request.comparison_type
+        logger.info(f"Section comparison request: {len(request.section_ids)} sections")
+
+        # Fetch section details
+        query = text("""
+            SELECT
+                id::text,
+                standard::text,
+                section_number,
+                section_title,
+                page_start,
+                page_end,
+                content_cleaned as content,
+                citation_key
+            FROM document_sections
+            WHERE id::text = ANY(:ids)
+        """)
+
+        rows = db.execute(query, {"ids": request.section_ids}).fetchall()
+
+        if len(rows) != len(request.section_ids):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"One or more sections not found"
+            )
+
+        # Format sections
+        year_map = {'PMBOK': '2021', 'PRINCE2': '2017', 'ISO_21502': '2020'}
+
+        sections = []
+        for row in rows:
+            standard = row[1]
+            year = year_map.get(standard, '2021')
+            page_ref = f"p. {row[4]}"
+            if row[5] and row[5] != row[4]:
+                page_ref = f"pp. {row[4]}-{row[5]}"
+
+            citation = f"{standard} ({year}), Section {row[2]}, {page_ref}"
+
+            sections.append({
+                "id": row[0],
+                "standard": standard,
+                "section_number": row[2],
+                "section_title": row[3],
+                "page_start": row[4],
+                "page_end": row[5],
+                "content": row[6],
+                "citation": citation
+            })
+
+        # Generate comparison using LLM
+        groq_service = get_groq_service()
+
+        # Build prompt for section comparison
+        prompt_parts = ["Compare the following sections:\n"]
+        for i, section in enumerate(sections, 1):
+            prompt_parts.append(f"\n### Section {i}: {section['standard']} - {section['section_title']}")
+            prompt_parts.append(f"Citation: {section['citation']}")
+            prompt_parts.append(f"Content: {section['content']}\n")
+
+        prompt_parts.append("""
+Provide a detailed comparison addressing:
+1. **Main Purpose**: What each section aims to accomplish
+2. **Key Concepts**: Important concepts or definitions covered
+3. **Similarities**: Common themes, approaches, or guidance
+4. **Differences**: Unique perspectives, methodologies, or emphasis
+5. **Practical Implications**: How these differences might affect practice
+
+Be specific and cite the sections by name when making comparisons.""")
+
+        messages = [
+            {"role": "system", "content": "You are an expert in comparing project management standards. Provide detailed, analytical comparisons."},
+            {"role": "user", "content": "".join(prompt_parts)}
+        ]
+
+        llm_response = groq_service.generate_response(
+            messages=messages,
+            temperature=0.3,
+            max_tokens=2048
         )
-        return comparison
+
+        logger.info(f"Section comparison completed for {len(sections)} sections")
+
+        return {
+            "sections": sections,
+            "analysis": llm_response['content'],
+            "usage_stats": {
+                "model": llm_response['model'],
+                "tokens": llm_response['usage']
+            }
+        }
+
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Section comparison failed: {str(e)}")
+        logger.error(f"Section comparison failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Section comparison failed. Please try again later."
+        )
 
 
-@router.get("/similarities/{section_id}")
+@router.get(
+    "/similarities/{section_id}",
+    response_model=SimilarSectionsResponse,
+    summary="Find similar sections across standards",
+    description="""
+    Find sections semantically similar to a given section.
+
+    Returns:
+    - Source section details
+    - List of similar sections with similarity scores
+    - Can filter to exclude/include same standard
+
+    Useful for discovering related concepts across standards.
+    """,
+    response_description="Similar sections ranked by similarity"
+)
 async def find_similar_sections(
-    section_id: str,
+    section_id: str = Path(..., description="Section UUID to find similarities for"),
     limit: int = 10,
-    min_similarity: float = 0.7,
-    db: Session = Depends(get_db),
-    qdrant_client=Depends(get_qdrant_client)
+    score_threshold: float = 0.5,
+    include_same_standard: bool = False,
+    db: Session = Depends(get_db)
 ):
-    """Find sections similar to a given section across all standards"""
-    comparison_service = ComparisonService(db, None, qdrant_client)
-    try:
-        similarities = await comparison_service.find_similar_sections(
-            section_id=section_id,
-            limit=limit,
-            min_similarity=min_similarity
-        )
-        return {"section_id": section_id, "similar_sections": similarities}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Similarity search failed: {str(e)}")
+    """
+    Find sections similar to a given section using vector similarity.
 
-
-@router.get("/gap-analysis/{standard}")
-async def perform_gap_analysis(
-    standard: str,
-    compare_with: List[str],
-    db: Session = Depends(get_db),
-    groq_client=Depends(get_groq_client)
-):
-    """Perform gap analysis between standards"""
-    comparison_service = ComparisonService(db, groq_client, None)
+    This endpoint uses the stored embeddings to find semantically similar content.
+    """
     try:
-        gaps = await comparison_service.gap_analysis(
-            base_standard=standard,
-            compare_standards=compare_with
+        logger.info(f"Finding similar sections for: {section_id}")
+
+        # Get source section
+        source_query = text("""
+            SELECT
+                id::text,
+                standard::text,
+                section_number,
+                section_title,
+                page_start,
+                page_end,
+                content_cleaned as content,
+                embedding
+            FROM document_sections
+            WHERE id::text = :section_id
+        """)
+
+        source_row = db.execute(source_query, {"section_id": section_id}).fetchone()
+
+        if not source_row:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Section '{section_id}' not found"
+            )
+
+        source_standard = source_row[1]
+        source_embedding = source_row[7]
+
+        if not source_embedding:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Section does not have an embedding"
+            )
+
+        # Convert embedding from pgvector string format to list if needed
+        if isinstance(source_embedding, str):
+            # Remove brackets and parse as floats
+            source_embedding = [float(x) for x in source_embedding.strip('[]').split(',')]
+
+        # Search for similar sections in Qdrant
+        qdrant_service = get_qdrant_service()
+
+        # Search with higher limit if excluding same standard
+        search_limit = limit * 2 if not include_same_standard else limit
+
+        search_results = qdrant_service.search(
+            query_vector=source_embedding,
+            limit=search_limit + 1,  # +1 because source will be in results
+            score_threshold=score_threshold
         )
-        return {"base_standard": standard, "compared_with": compare_with, "gaps": gaps}
+
+        # Filter results
+        similar_sections = []
+        for result in search_results:
+            result_id = str(result['id'])
+
+            # Skip the source section itself
+            if result_id == section_id:
+                continue
+
+            # Skip same standard if requested
+            if not include_same_standard and result['payload'].get('standard') == source_standard:
+                continue
+
+            similar_sections.append(result)
+
+            if len(similar_sections) >= limit:
+                break
+
+        # Fetch full metadata for similar sections
+        if similar_sections:
+            similar_ids = [str(r['id']) for r in similar_sections]
+            scores = {str(r['id']): r['score'] for r in similar_sections}
+
+            similar_query = text("""
+                SELECT
+                    id::text,
+                    standard::text,
+                    section_number,
+                    section_title,
+                    page_start,
+                    page_end,
+                    content_cleaned as content
+                FROM document_sections
+                WHERE id::text = ANY(:ids)
+            """)
+
+            similar_rows = db.execute(similar_query, {"ids": similar_ids}).fetchall()
+
+            # Format results
+            year_map = {'PMBOK': '2021', 'PRINCE2': '2017', 'ISO_21502': '2020'}
+            formatted_similar = []
+
+            for row in similar_rows:
+                section_id_str = row[0]
+                standard = row[1]
+                year = year_map.get(standard, '2021')
+                page_ref = f"p. {row[4]}"
+                if row[5] and row[5] != row[4]:
+                    page_ref = f"pp. {row[4]}-{row[5]}"
+
+                citation = f"{standard} ({year}), Section {row[2]}, {page_ref}"
+                content_preview = row[6][:200] + "..." if len(row[6]) > 200 else row[6]
+
+                formatted_similar.append({
+                    "id": section_id_str,
+                    "standard": standard,
+                    "section_number": row[2],
+                    "section_title": row[3],
+                    "page_start": row[4],
+                    "citation": citation,
+                    "similarity_score": scores.get(section_id_str, 0.0),
+                    "content_preview": content_preview
+                })
+        else:
+            formatted_similar = []
+
+        # Format source section
+        year_map = {'PMBOK': '2021', 'PRINCE2': '2017', 'ISO_21502': '2020'}
+        source_year = year_map.get(source_standard, '2021')
+        source_page_ref = f"p. {source_row[4]}"
+        if source_row[5] and source_row[5] != source_row[4]:
+            source_page_ref = f"pp. {source_row[4]}-{source_row[5]}"
+
+        source_citation = f"{source_standard} ({source_year}), Section {source_row[2]}, {source_page_ref}"
+
+        source_section = {
+            "id": source_row[0],
+            "standard": source_standard,
+            "section_number": source_row[2],
+            "section_title": source_row[3],
+            "page_start": source_row[4],
+            "page_end": source_row[5],
+            "content": source_row[6],
+            "citation": source_citation
+        }
+
+        logger.info(f"Found {len(formatted_similar)} similar sections for {section_id}")
+
+        return {
+            "source_section": source_section,
+            "similar_sections": formatted_similar,
+            "total_found": len(formatted_similar)
+        }
+
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gap analysis failed: {str(e)}")
+        logger.error(f"Similarity search failed for {section_id}: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Similarity search failed. Please try again later."
+        )

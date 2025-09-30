@@ -23,7 +23,7 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(health.router, tags=["health"])
+app.include_router(health.router, prefix=settings.API_V1_STR, tags=["health"])
 app.include_router(search.router, prefix=settings.API_V1_STR, tags=["search"])
 app.include_router(comparisons.router, prefix=settings.API_V1_STR, tags=["comparisons"])
 app.include_router(process.router, prefix=settings.API_V1_STR, tags=["process"])

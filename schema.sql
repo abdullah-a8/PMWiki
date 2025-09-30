@@ -4,7 +4,7 @@
 
 -- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pgvector";
+CREATE EXTENSION IF NOT EXISTS "vector";
 
 -- Create custom types
 CREATE TYPE standard_type AS ENUM ('PMBOK', 'PRINCE2', 'ISO_21502');

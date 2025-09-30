@@ -1,4 +1,4 @@
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 from typing import List
 
 
@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     VOYAGE_RATE_LIMIT: int = 1000000  # tokens per month
 
     class Config:
-        env_file = "../.env"
+        env_file = ".env"  # Corrected path for env file
         case_sensitive = True
 
 

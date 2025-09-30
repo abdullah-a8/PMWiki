@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.db.database import get_db
+from sqlalchemy import text
+from app.db.database import get_db, check_db_connection
 from app.core.config import settings
 
 router = APIRouter()
@@ -16,22 +17,40 @@ async def health_check():
 async def detailed_health_check(db: Session = Depends(get_db)):
     """Detailed health check including database connectivity"""
     try:
-        # Test database connection
-        db.execute("SELECT 1")
+        # Test database connection using SQLAlchemy 2.0 syntax
+        result = db.execute(text("SELECT 1"))
+        result.fetchone()  # Ensure the query actually executes
         db_status = "healthy"
     except Exception as e:
         db_status = f"unhealthy: {str(e)}"
 
-    # TODO: Add checks for Qdrant, Groq, and Voyage AI services
+    # Test API service connectivity (future implementation)
+    # TODO: Add actual checks for external services
+    qdrant_status = "not_implemented"
+    groq_status = "not_implemented"
+    voyage_status = "not_implemented"
+
+    # Determine overall status
+    overall_status = "healthy" if db_status == "healthy" else "degraded"
 
     return {
-        "status": "healthy" if db_status == "healthy" else "degraded",
+        "status": overall_status,
         "service": "PMWiki RAG API",
         "version": settings.VERSION,
         "checks": {
             "database": db_status,
-            "qdrant": "not_implemented",
-            "groq": "not_implemented",
-            "voyage": "not_implemented"
+            "qdrant": qdrant_status,
+            "groq": groq_status,
+            "voyage": voyage_status
         }
+    }
+
+
+@router.get("/health/db-only")
+async def database_health_check():
+    """Quick database connectivity check without dependency injection"""
+    db_healthy = check_db_connection()
+    return {
+        "database_healthy": db_healthy,
+        "status": "healthy" if db_healthy else "unhealthy"
     }

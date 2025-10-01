@@ -47,7 +47,7 @@ export function LibraryPage() {
           <Card
             key={standard.name}
             className="hover:shadow-lg transition-shadow cursor-pointer"
-            onClick={() => navigate(`/standards/${standard.name}`)}
+            onClick={() => navigate(`/library/${standard.name}`)}
           >
             <CardHeader>
               <div className="flex items-center justify-between mb-3">
@@ -70,7 +70,7 @@ export function LibraryPage() {
                 className="w-full"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/standards/${standard.name}`);
+                  navigate(`/library/${standard.name}`);
                 }}
               >
                 <BookOpen className="h-4 w-4 mr-2" />

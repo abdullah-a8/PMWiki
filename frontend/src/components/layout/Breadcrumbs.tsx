@@ -47,18 +47,20 @@ export function Breadcrumbs() {
           const path = getSegmentPath(index);
 
           return (
-            <BreadcrumbItem key={path}>
-              <BreadcrumbSeparator>
+            <>
+              <BreadcrumbSeparator key={`sep-${path}`}>
                 <ChevronRight className="h-4 w-4" />
               </BreadcrumbSeparator>
-              {isLast ? (
-                <BreadcrumbPage>{formatSegment(segment)}</BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink asChild>
-                  <Link to={path}>{formatSegment(segment)}</Link>
-                </BreadcrumbLink>
-              )}
-            </BreadcrumbItem>
+              <BreadcrumbItem key={path}>
+                {isLast ? (
+                  <BreadcrumbPage>{formatSegment(segment)}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink asChild>
+                    <Link to={path}>{formatSegment(segment)}</Link>
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+            </>
           );
         })}
       </BreadcrumbList>

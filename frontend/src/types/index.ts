@@ -1,19 +1,74 @@
-// API Response Types
+// API Response Types (Aligned with Backend Schema)
 
-export interface Section {
-  id: string
-  section_id: string
-  title: string
-  content: string
+// Source Reference (from search results)
+export interface SourceReference {
   standard: string
-  token_count?: number
+  section_number: string
+  section_title: string
+  page_start: number
+  page_end?: number
+  content: string
+  citation: string
+  relevance_score: number
 }
 
+// Usage Statistics
+export interface UsageStats {
+  model: string
+  tokens: {
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+  }
+  chunks_retrieved: number
+  primary_sources_count: number
+  additional_sources_count: number
+}
+
+// Search Response
 export interface SearchResult {
-  llm_answer: string
-  primary_sources: Section[]
-  additional_context: Section[]
-  token_usage?: number
+  query: string
+  answer: string
+  primary_sources: SourceReference[]
+  additional_context: SourceReference[]
+  usage_stats: UsageStats
+}
+
+// Section Detail Response
+export interface Section {
+  id: string
+  standard: string
+  section_number: string
+  section_title: string
+  level: number
+  page_start?: number
+  page_end?: number
+  content: string
+  citation_key: string
+  citation_apa: string
+  citation_ieee: string
+  parent_chain: any[]
+  child_count?: number
+  content_flags: Record<string, any>
+  created_at?: string
+}
+
+// Section List Item (for standards library)
+export interface SectionListItem {
+  id: string
+  section_number: string
+  section_title: string
+  level: number
+  page_start?: number
+  citation_key: string
+}
+
+// Standards Library Response
+export interface StandardInfo {
+  standard: string
+  total_sections: number
+  sections: SectionListItem[]
+  description?: string
 }
 
 export interface ComparisonResult {

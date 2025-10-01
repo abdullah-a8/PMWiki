@@ -9,14 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/lib/api";
-import type { Section } from "@/types";
-
-interface StandardInfo {
-  standard: string;
-  description: string;
-  sections: Section[];
-  total_sections: number;
-}
+import type { StandardInfo, SectionListItem } from "@/types";
 
 export function StandardsLibraryPage() {
   const { standard } = useParams<{ standard: string }>();
@@ -28,7 +21,7 @@ export function StandardsLibraryPage() {
   const { data: standardInfo, isLoading, error } = useQuery<StandardInfo>({
     queryKey: ["standard", standard],
     queryFn: async () => {
-      const response = await api.get(`/v1/standards/${standard}`);
+      const response = await api.get(`/v1/standards/${standard}/sections`);
       return response.data;
     },
     enabled: !!standard,
@@ -38,15 +31,15 @@ export function StandardsLibraryPage() {
     const colors: Record<string, string> = {
       PMBOK: "bg-blue-500/10 text-blue-500 border-blue-500/20",
       PRINCE2: "bg-purple-500/10 text-purple-500 border-purple-500/20",
-      "ISO 21502": "bg-teal-500/10 text-teal-500 border-teal-500/20",
+      ISO_21502: "bg-teal-500/10 text-teal-500 border-teal-500/20",
     };
     return colors[std] || "bg-zinc-500/10 text-zinc-500 border-zinc-500/20";
   };
 
   const filteredSections = standardInfo?.sections.filter(
     (section) =>
-      section.title.toLowerCase().includes(searchFilter.toLowerCase()) ||
-      section.section_id.toLowerCase().includes(searchFilter.toLowerCase())
+      section.section_title.toLowerCase().includes(searchFilter.toLowerCase()) ||
+      section.section_number.toLowerCase().includes(searchFilter.toLowerCase())
   ) || [];
 
   const totalPages = Math.ceil(filteredSections.length / sectionsPerPage);
@@ -157,29 +150,38 @@ export function StandardsLibraryPage() {
             </div>
           ) : (
             <>
-              <div className="space-y-2">
-                {paginatedSections.map((section) => (
-                  <Button
-                    key={section.id}
-                    variant="ghost"
-                    className="w-full justify-start h-auto py-3 px-4"
-                    onClick={() => navigate(`/sections/${section.id}`)}
-                  >
-                    <div className="flex items-start gap-3 text-left w-full">
-                      <span className="font-mono text-sm text-muted-foreground shrink-0 mt-0.5">
-                        {section.section_id}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium">{section.title}</div>
-                        {section.content && (
-                          <div className="text-sm text-muted-foreground line-clamp-1 mt-1">
-                            {section.content.substring(0, 120)}...
+              <div className="space-y-1">
+                {paginatedSections.map((section) => {
+                  // Calculate indentation based on hierarchy level
+                  const indentLevel = Math.max(0, section.level - 1);
+                  const indentPx = indentLevel * 24; // 24px per level
+
+                  return (
+                    <Button
+                      key={section.id}
+                      variant="ghost"
+                      className="w-full justify-start h-auto py-2 px-3 hover:bg-secondary/80"
+                      onClick={() => navigate(`/sections/${section.id}`)}
+                      style={{ paddingLeft: `${12 + indentPx}px` }}
+                    >
+                      <div className="flex items-start gap-3 text-left w-full">
+                        <span className="font-mono text-xs text-muted-foreground shrink-0 mt-0.5 min-w-[60px]">
+                          {section.section_number}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className={`${section.level === 1 ? 'font-semibold text-base' : 'font-medium'}`}>
+                            {section.section_title}
                           </div>
-                        )}
+                          {section.page_start && (
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              Page {section.page_start}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </Button>
-                ))}
+                    </Button>
+                  );
+                })}
               </div>
 
               {/* Pagination */}

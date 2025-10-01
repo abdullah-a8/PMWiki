@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/lib/api";
-import type { SearchResult, Section } from "@/types";
+import type { SearchResult, SourceReference } from "@/types";
 
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -56,9 +56,9 @@ export function SearchPage() {
     setTimeout(() => setCopiedCitation(null), 2000);
   };
 
-  const generateAPACitation = (section: Section) => {
-    const year = new Date().getFullYear();
-    return `${section.standard}. (${year}). ${section.title}. Section ${section.section_id}.`;
+  // Backend already provides formatted citations, so we can use them directly
+  const getCitation = (source: SourceReference) => {
+    return source.citation;
   };
 
   return (
@@ -107,16 +107,16 @@ export function SearchPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Generated Answer</CardTitle>
-                {data.token_usage && (
+                {data.usage_stats && (
                   <Badge variant="secondary" className="text-xs">
-                    {data.token_usage} tokens
+                    {data.usage_stats.tokens.total_tokens} tokens
                   </Badge>
                 )}
               </div>
             </CardHeader>
             <CardContent>
               <p className="text-base leading-relaxed whitespace-pre-line">
-                {data.llm_answer}
+                {data.answer}
               </p>
             </CardContent>
           </Card>
@@ -133,7 +133,7 @@ export function SearchPage() {
 
               <div className="grid gap-4 md:grid-cols-3">
                 {data.primary_sources.map((section, index) => (
-                  <Card key={`${section.id}-${index}`} className="flex flex-col">
+                  <Card key={`${section.standard}-${section.section_number}-${index}`} className="flex flex-col">
                     <CardHeader>
                       <Badge
                         variant="outline"
@@ -141,8 +141,8 @@ export function SearchPage() {
                       >
                         {section.standard}
                       </Badge>
-                      <CardTitle className="text-lg mt-2">{section.title}</CardTitle>
-                      <CardDescription>Section {section.section_id}</CardDescription>
+                      <CardTitle className="text-lg mt-2">{section.section_title}</CardTitle>
+                      <CardDescription>Section {section.section_number}</CardDescription>
                     </CardHeader>
                     <CardContent className="flex-1 space-y-4">
                       <p className="text-sm line-clamp-4">{section.content}</p>
@@ -152,15 +152,15 @@ export function SearchPage() {
                       <div className="space-y-2">
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-xs text-muted-foreground flex-1">
-                            {generateAPACitation(section)}
+                            {section.citation}
                           </p>
                           <Button
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 p-0 shrink-0"
-                            onClick={() => copyToClipboard(generateAPACitation(section), section.id)}
+                            onClick={() => copyToClipboard(section.citation, section.standard + section.section_number)}
                           >
-                            {copiedCitation === section.id ? (
+                            {copiedCitation === section.standard + section.section_number ? (
                               <Check className="h-3 w-3" />
                             ) : (
                               <Copy className="h-3 w-3" />
@@ -172,7 +172,8 @@ export function SearchPage() {
                           variant="outline"
                           size="sm"
                           className="w-full"
-                          onClick={() => window.location.href = `/sections/${section.id}`}
+                          disabled
+                          title="Section detail integration coming soon"
                         >
                           View Full Section
                         </Button>
@@ -195,7 +196,7 @@ export function SearchPage() {
                   <AccordionContent>
                     <div className="grid gap-4 md:grid-cols-2 pt-4">
                       {data.additional_context.map((section, index) => (
-                        <Card key={`${section.id}-${index}`}>
+                        <Card key={`${section.standard}-${section.section_number}-additional-${index}`}>
                           <CardHeader>
                             <Badge
                               variant="outline"
@@ -203,8 +204,8 @@ export function SearchPage() {
                             >
                               {section.standard}
                             </Badge>
-                            <CardTitle className="text-base mt-2">{section.title}</CardTitle>
-                            <CardDescription>Section {section.section_id}</CardDescription>
+                            <CardTitle className="text-base mt-2">{section.section_title}</CardTitle>
+                            <CardDescription>Section {section.section_number}</CardDescription>
                           </CardHeader>
                           <CardContent className="space-y-3">
                             <p className="text-sm line-clamp-3">{section.content}</p>
@@ -213,7 +214,8 @@ export function SearchPage() {
                               variant="outline"
                               size="sm"
                               className="w-full"
-                              onClick={() => window.location.href = `/sections/${section.id}`}
+                              disabled
+                              title="Section detail integration coming soon"
                             >
                               View Section
                             </Button>

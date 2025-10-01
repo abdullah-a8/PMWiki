@@ -28,7 +28,7 @@ export function SectionDetailPage() {
     const colors: Record<string, string> = {
       PMBOK: "bg-blue-500/10 text-blue-500 border-blue-500/20",
       PRINCE2: "bg-purple-500/10 text-purple-500 border-purple-500/20",
-      "ISO 21502": "bg-teal-500/10 text-teal-500 border-teal-500/20",
+      ISO_21502: "bg-teal-500/10 text-teal-500 border-teal-500/20",
     };
     return colors[standard] || "bg-zinc-500/10 text-zinc-500 border-zinc-500/20";
   };
@@ -37,16 +37,6 @@ export function SectionDetailPage() {
     navigator.clipboard.writeText(text);
     setCopiedCitation(citationType);
     setTimeout(() => setCopiedCitation(null), 2000);
-  };
-
-  const generateAPACitation = (section: Section) => {
-    const year = new Date().getFullYear();
-    return `${section.standard}. (${year}). ${section.title}. Section ${section.section_id}.`;
-  };
-
-  const generateIEEECitation = (section: Section) => {
-    const year = new Date().getFullYear();
-    return `${section.standard}, "${section.title}," Section ${section.section_id}, ${year}.`;
   };
 
   if (isLoading) {
@@ -92,16 +82,16 @@ export function SectionDetailPage() {
             >
               {section.standard}
             </Badge>
-            {section.token_count && (
+            {section.page_start && (
               <Badge variant="secondary" className="text-xs">
-                {section.token_count} tokens
+                Page {section.page_start}
               </Badge>
             )}
           </div>
 
           <div>
-            <CardTitle className="text-3xl">{section.title}</CardTitle>
-            <p className="text-muted-foreground mt-2">Section {section.section_id}</p>
+            <CardTitle className="text-3xl">{section.section_title}</CardTitle>
+            <p className="text-muted-foreground mt-2">Section {section.section_number}</p>
           </div>
 
           <Separator />
@@ -118,7 +108,7 @@ export function SectionDetailPage() {
                   variant="ghost"
                   size="sm"
                   className="h-6 px-2"
-                  onClick={() => copyToClipboard(generateAPACitation(section), "apa")}
+                  onClick={() => copyToClipboard(section.citation_apa, "apa")}
                 >
                   {copiedCitation === "apa" ? (
                     <>
@@ -133,7 +123,7 @@ export function SectionDetailPage() {
                   )}
                 </Button>
               </div>
-              <p className="text-sm bg-muted p-2 rounded">{generateAPACitation(section)}</p>
+              <p className="text-sm bg-muted p-2 rounded">{section.citation_apa}</p>
             </div>
 
             {/* IEEE Citation */}
@@ -144,7 +134,7 @@ export function SectionDetailPage() {
                   variant="ghost"
                   size="sm"
                   className="h-6 px-2"
-                  onClick={() => copyToClipboard(generateIEEECitation(section), "ieee")}
+                  onClick={() => copyToClipboard(section.citation_ieee, "ieee")}
                 >
                   {copiedCitation === "ieee" ? (
                     <>
@@ -159,7 +149,7 @@ export function SectionDetailPage() {
                   )}
                 </Button>
               </div>
-              <p className="text-sm bg-muted p-2 rounded">{generateIEEECitation(section)}</p>
+              <p className="text-sm bg-muted p-2 rounded">{section.citation_ieee}</p>
             </div>
           </div>
         </CardHeader>
@@ -185,14 +175,14 @@ export function SectionDetailPage() {
           <Button
             variant="outline"
             className="w-full justify-start"
-            onClick={() => navigate(`/standards/${section.standard}`)}
+            onClick={() => navigate(`/library/${section.standard}`)}
           >
             View all sections from {section.standard}
           </Button>
           <Button
             variant="outline"
             className="w-full justify-start"
-            onClick={() => navigate(`/search?q=${encodeURIComponent(section.title)}`)}
+            onClick={() => navigate(`/search?q=${encodeURIComponent(section.section_title)}`)}
           >
             Search for similar content
           </Button>

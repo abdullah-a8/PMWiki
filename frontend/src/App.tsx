@@ -18,8 +18,8 @@ function App() {
           <Route path="compare" element={<ComparePage />} />
           <Route path="generate" element={<ProcessGeneratorPage />} />
           <Route path="library" element={<LibraryPage />} />
+          <Route path="library/:standard" element={<StandardsLibraryPage />} />
           <Route path="sections/:id" element={<SectionDetailPage />} />
-          <Route path="standards/:standard" element={<StandardsLibraryPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

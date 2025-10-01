@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { Search, Command as CommandIcon, Loader2, Copy, Check, ChevronDown, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -261,7 +263,9 @@ export function HomePage() {
                           <CardDescription>Section {section.section_number}</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-1 space-y-4">
-                          <p className="text-sm line-clamp-4">{section.content}</p>
+                          <div className="text-sm line-clamp-4 prose prose-sm prose-zinc dark:prose-invert max-w-none">
+                            <Markdown remarkPlugins={[remarkGfm]}>{section.content}</Markdown>
+                          </div>
 
                           <Separator />
 
@@ -357,7 +361,9 @@ export function HomePage() {
                             <CardDescription>Section {section.section_number}</CardDescription>
                           </CardHeader>
                           <CardContent className="space-y-3">
-                            <p className="text-sm line-clamp-3">{section.content}</p>
+                            <div className="text-sm line-clamp-3 prose prose-sm prose-zinc dark:prose-invert max-w-none">
+                              <Markdown remarkPlugins={[remarkGfm]}>{section.content}</Markdown>
+                            </div>
 
                             <Button
                               variant="outline"

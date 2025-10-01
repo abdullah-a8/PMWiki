@@ -4,10 +4,34 @@ Stores embeddings in both PostgreSQL (pgvector) and Qdrant
 """
 import sys
 import os
+from pathlib import Path
+
+# Load environment variables FIRST
+from dotenv import load_dotenv
+
+# Detect if running from backend/scripts or project root
+current_file = Path(__file__).resolve()
+backend_dir = current_file.parent.parent
+project_root = backend_dir.parent
+
+# Try loading .env from multiple locations
+env_locations = [
+    project_root / ".env",
+    backend_dir / ".env",
+]
+
+env_loaded = False
+for env_path in env_locations:
+    if env_path.exists():
+        load_dotenv(env_path)
+        env_loaded = True
+        break
+
+if not env_loaded:
+    print("⚠️  Warning: No .env file found")
 
 # Add backend directory to path
-backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, backend_dir)
+sys.path.insert(0, str(backend_dir))
 
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session

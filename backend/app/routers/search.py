@@ -210,6 +210,9 @@ async def list_standard_sections(
     This endpoint provides a table of contents view for navigating standards.
     """
     try:
+        # Normalize standard name (handle URL-encoded spaces)
+        standard = standard.replace(" ", "_").replace("%20", "_")
+
         # Validate standard name
         valid_standards = ["PMBOK", "PRINCE2", "ISO_21502"]
         if standard not in valid_standards:

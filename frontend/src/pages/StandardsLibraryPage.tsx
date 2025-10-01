@@ -36,6 +36,10 @@ export function StandardsLibraryPage() {
     return colors[std] || "bg-zinc-500/10 text-zinc-500 border-zinc-500/20";
   };
 
+  const getStandardDisplayName = (std: string) => {
+    return std === "ISO_21502" ? "ISO 21502" : std;
+  };
+
   const filteredSections = standardInfo?.sections.filter(
     (section) =>
       section.section_title.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -89,7 +93,7 @@ export function StandardsLibraryPage() {
               variant="outline"
               className={`text-lg px-4 py-1 ${getStandardBadgeColor(standardInfo.standard)}`}
             >
-              {standardInfo.standard}
+              {getStandardDisplayName(standardInfo.standard)}
             </Badge>
             <Badge variant="secondary">
               {standardInfo.total_sections} sections
@@ -97,7 +101,7 @@ export function StandardsLibraryPage() {
           </div>
 
           <div>
-            <CardTitle className="text-2xl">{standardInfo.standard} Standard</CardTitle>
+            <CardTitle className="text-2xl">{getStandardDisplayName(standardInfo.standard)} Standard</CardTitle>
             <CardDescription className="mt-2 text-base">
               {standardInfo.description || "Project Management Standard"}
             </CardDescription>
@@ -121,10 +125,10 @@ export function StandardsLibraryPage() {
               />
             </div>
             <Button
-              onClick={() => navigate(`/search?q=${encodeURIComponent(standardInfo.standard)}`)}
+              onClick={() => navigate(`/search?q=${encodeURIComponent(getStandardDisplayName(standardInfo.standard))}`)}
             >
               <Search className="h-4 w-4 mr-2" />
-              Search in {standardInfo.standard}
+              Search in {getStandardDisplayName(standardInfo.standard)}
             </Button>
           </div>
         </CardHeader>

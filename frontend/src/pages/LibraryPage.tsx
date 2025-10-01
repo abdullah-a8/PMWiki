@@ -20,7 +20,7 @@ const standards = [
     icon: "📗",
   },
   {
-    name: "ISO 21502",
+    name: "ISO_21502",
     fullName: "ISO 21502:2020",
     description: "International standard providing guidance on project management principles and processes",
     color: "bg-teal-500/10 text-teal-500 border-teal-500/20",

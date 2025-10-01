@@ -1,4 +1,4 @@
-import { Menu, HelpCircle, CircleDot } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -43,27 +43,19 @@ export function Header({ onToggleSidebar }: HeaderProps) {
       <div className="flex-1" />
 
       {/* API Status Indicator */}
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <CircleDot
-          className={`h-3 w-3 ${
+      <div className="flex items-center gap-2 text-sm">
+        <div
+          className={`h-2 w-2 rounded-full ${
             isLoading
-              ? "text-yellow-500 animate-pulse"
+              ? "bg-yellow-500 animate-pulse"
               : health?.status === "healthy"
-              ? "text-green-500"
-              : "text-red-500"
+              ? "bg-green-500"
+              : "bg-red-500"
           }`}
         />
-        <span className="hidden sm:inline">
-          {isLoading ? "Connecting..." : health?.status === "healthy" ? "API Connected" : "API Offline"}
+        <span className="hidden sm:inline text-muted-foreground">
+          {isLoading ? "Connecting" : health?.status === "healthy" ? "Connected" : "Offline"}
         </span>
-      </div>
-
-      {/* Help Icon */}
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon">
-          <HelpCircle className="h-5 w-5" />
-          <span className="sr-only">Help</span>
-        </Button>
       </div>
     </header>
   );

@@ -24,6 +24,10 @@ export function SectionDetailPage() {
     enabled: !!id,
   });
 
+  const getStandardDisplayName = (std: string) => {
+    return std === "ISO_21502" ? "ISO 21502" : std;
+  };
+
   const getStandardBadgeColor = (standard: string) => {
     const colors: Record<string, string> = {
       PMBOK: "bg-blue-500/10 text-blue-500 border-blue-500/20",
@@ -80,7 +84,7 @@ export function SectionDetailPage() {
               variant="outline"
               className={`w-fit ${getStandardBadgeColor(section.standard)}`}
             >
-              {section.standard}
+              {getStandardDisplayName(section.standard)}
             </Badge>
             {section.page_start && (
               <Badge variant="secondary" className="text-xs">
@@ -177,7 +181,7 @@ export function SectionDetailPage() {
             className="w-full justify-start"
             onClick={() => navigate(`/library/${section.standard}`)}
           >
-            View all sections from {section.standard}
+            View all sections from {getStandardDisplayName(section.standard)}
           </Button>
           <Button
             variant="outline"

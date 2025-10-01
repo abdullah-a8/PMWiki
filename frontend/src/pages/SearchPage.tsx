@@ -41,13 +41,19 @@ export function SearchPage() {
     }
   };
 
+  const getStandardDisplayName = (std: string) => {
+    return std === "ISO_21502" ? "ISO 21502" : std;
+  };
+
   const getStandardBadgeColor = (standard: string) => {
+    // Normalize to underscore format for lookup
+    const normalizedStandard = standard.replace(" ", "_");
     const colors: Record<string, string> = {
       PMBOK: "bg-blue-500/10 text-blue-500 border-blue-500/20",
       PRINCE2: "bg-purple-500/10 text-purple-500 border-purple-500/20",
-      "ISO 21502": "bg-teal-500/10 text-teal-500 border-teal-500/20",
+      ISO_21502: "bg-teal-500/10 text-teal-500 border-teal-500/20",
     };
-    return colors[standard] || "bg-zinc-500/10 text-zinc-500 border-zinc-500/20";
+    return colors[normalizedStandard] || "bg-zinc-500/10 text-zinc-500 border-zinc-500/20";
   };
 
   const copyToClipboard = (text: string, id: string) => {
@@ -139,7 +145,7 @@ export function SearchPage() {
                         variant="outline"
                         className={`w-fit ${getStandardBadgeColor(section.standard)}`}
                       >
-                        {section.standard}
+                        {getStandardDisplayName(section.standard)}
                       </Badge>
                       <CardTitle className="text-lg mt-2">{section.section_title}</CardTitle>
                       <CardDescription>Section {section.section_number}</CardDescription>
@@ -202,7 +208,7 @@ export function SearchPage() {
                               variant="outline"
                               className={`w-fit ${getStandardBadgeColor(section.standard)}`}
                             >
-                              {section.standard}
+                              {getStandardDisplayName(section.standard)}
                             </Badge>
                             <CardTitle className="text-base mt-2">{section.section_title}</CardTitle>
                             <CardDescription>Section {section.section_number}</CardDescription>

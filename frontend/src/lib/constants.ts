@@ -3,7 +3,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localho
 export const STANDARDS = {
   PMBOK: "PMBOK",
   PRINCE2: "PRINCE2",
-  ISO_21502: "ISO 21502",
+  ISO_21502: "ISO_21502",
 } as const
 
 export const STANDARD_BADGES = {

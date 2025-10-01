@@ -41,14 +41,6 @@ export function AppSidebar({ isCollapsed }: AppSidebarProps) {
   return (
     <div className="flex h-full flex-col bg-background">
       <div className="p-4">
-        <div
-          className={cn(
-            "mb-2 px-4 text-sm font-semibold text-muted-foreground transition-all duration-300",
-            isCollapsed ? "opacity-0 h-0 overflow-hidden" : "opacity-100 h-auto"
-          )}
-        >
-          Navigation
-        </div>
         <nav className="space-y-1">
           <TooltipProvider delayDuration={0}>
             {menuItems.map((item) => {

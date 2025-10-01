@@ -1,16 +1,129 @@
+import { useNavigate } from "react-router-dom";
+import { BookOpen, FileText } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+const standards = [
+  {
+    name: "PMBOK",
+    fullName: "Project Management Body of Knowledge",
+    description: "A Guide to the Project Management Body of Knowledge - the globally recognized standard for project management",
+    color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+    icon: "📘",
+  },
+  {
+    name: "PRINCE2",
+    fullName: "Projects IN Controlled Environments",
+    description: "A process-based project management method focusing on organization and control throughout the project lifecycle",
+    color: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+    icon: "📗",
+  },
+  {
+    name: "ISO 21502",
+    fullName: "ISO 21502:2020",
+    description: "International standard providing guidance on project management principles and processes",
+    color: "bg-teal-500/10 text-teal-500 border-teal-500/20",
+    icon: "📙",
+  },
+];
+
 export function LibraryPage() {
+  const navigate = useNavigate();
+
   return (
-    <div className="space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
+      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">Browse Library</h1>
         <p className="text-muted-foreground mt-2">
-          Explore PM standards library
+          Explore PM standards and their sections
         </p>
       </div>
 
-      <div className="text-muted-foreground">
-        Library browser coming soon...
+      {/* Standards Grid */}
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
+        {standards.map((standard) => (
+          <Card
+            key={standard.name}
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => navigate(`/standards/${standard.name}`)}
+          >
+            <CardHeader>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-4xl">{standard.icon}</span>
+                <Badge
+                  variant="outline"
+                  className={`${standard.color} text-sm`}
+                >
+                  {standard.name}
+                </Badge>
+              </div>
+              <CardTitle className="text-xl">{standard.fullName}</CardTitle>
+              <CardDescription className="mt-2">
+                {standard.description}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/standards/${standard.name}`);
+                }}
+              >
+                <BookOpen className="h-4 w-4 mr-2" />
+                Browse Sections
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
       </div>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+          <CardDescription>
+            Common tasks to help you navigate the library
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => navigate("/search")}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Search across all standards
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => navigate("/compare")}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Compare standards side-by-side
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Info Card */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-4">
+            <BookOpen className="h-5 w-5 text-muted-foreground mt-0.5" />
+            <div>
+              <h3 className="font-semibold mb-1">About the Library</h3>
+              <p className="text-sm text-muted-foreground">
+                This library contains comprehensive documentation from three major project management standards.
+                You can browse sections, search for specific topics, and compare approaches across standards.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

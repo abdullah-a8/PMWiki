@@ -8,6 +8,9 @@ export const apiClient = axios.create({
   },
 })
 
+// Export as `api` for convenience
+export const api = apiClient
+
 // Request interceptor
 apiClient.interceptors.request.use(
   (config) => {

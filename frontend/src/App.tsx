@@ -5,6 +5,8 @@ import { SearchPage } from "./pages/SearchPage";
 import { ComparePage } from "./pages/ComparePage";
 import { ProcessGeneratorPage } from "./pages/ProcessGeneratorPage";
 import { LibraryPage } from "./pages/LibraryPage";
+import { SectionDetailPage } from "./pages/SectionDetailPage";
+import { StandardsLibraryPage } from "./pages/StandardsLibraryPage";
 
 function App() {
   return (
@@ -16,6 +18,8 @@ function App() {
           <Route path="compare" element={<ComparePage />} />
           <Route path="generate" element={<ProcessGeneratorPage />} />
           <Route path="library" element={<LibraryPage />} />
+          <Route path="sections/:id" element={<SectionDetailPage />} />
+          <Route path="standards/:standard" element={<StandardsLibraryPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

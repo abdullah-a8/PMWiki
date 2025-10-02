@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { Search, Command as CommandIcon, Loader2, Copy, Check, ChevronDown, X } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Input } from "@/components/ui/input";
@@ -10,9 +9,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { api } from "@/lib/api";
 import { searchHistoryStorage } from "@/lib/searchHistory";
-import type { SearchResult } from "@/types";
+
+interface SourceReference {
+  id: string;
+  standard: string;
+  section_number: string;
+  section_title: string;
+  page_start: number;
+  page_end?: number;
+  content: string;
+  citation: string;
+  relevance_score: number;
+}
 
 export function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -25,30 +34,26 @@ export function HomePage() {
   const location = useLocation();
   const previousQueryRef = useRef<string | null>(null);
 
-  const { data, isLoading, error, refetch } = useQuery<SearchResult>({
-    queryKey: ["search", searchParams.get("q")],
-    queryFn: async () => {
-      const query = searchParams.get("q");
-      if (!query) throw new Error("No query provided");
-      const response = await api.post("/v1/search", { query });
-      return response.data;
-    },
-    enabled: !!searchParams.get("q"),
-  });
+  // Streaming state
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [streamedAnswer, setStreamedAnswer] = useState("");
+  const [primarySources, setPrimarySources] = useState<SourceReference[]>([]);
+  const [additionalContext, setAdditionalContext] = useState<SourceReference[]>([]);
 
   // Save to localStorage when search completes successfully
   useEffect(() => {
-    const currentQuery = searchParams.get("q");
-    if (data && currentQuery && !isViewingHistory) {
+    const query = searchParams.get("q");
+    if (!isLoading && streamedAnswer && query && !isViewingHistory) {
       // Only save to history if this is NOT a history view
-      const primarySourcesCount = data.primary_sources?.length || 0;
-      const standards = [...new Set(data.primary_sources?.map(s => s.standard) || [])];
+      const primarySourcesCount = primarySources?.length || 0;
+      const standards = [...new Set(primarySources?.map(s => s.standard) || [])];
 
-      searchHistoryStorage.addSearch(currentQuery, primarySourcesCount, standards, true);
+      searchHistoryStorage.addSearch(query, primarySourcesCount, standards, true);
       window.dispatchEvent(new Event('searchHistoryUpdated'));
-      previousQueryRef.current = currentQuery;
+      previousQueryRef.current = query;
     }
-  }, [data, searchParams, isViewingHistory]);
+  }, [isLoading, streamedAnswer, searchParams, isViewingHistory, primarySources]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -85,6 +90,77 @@ export function HomePage() {
     }
   }, [searchParams, location.state]);
 
+  // Streaming search function
+  const performStreamingSearch = async (query: string) => {
+    setIsLoading(true);
+    setError(null);
+    setStreamedAnswer("");
+    setPrimarySources([]);
+    setAdditionalContext([]);
+
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/search/stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: query,
+          top_k_per_standard: 3,
+          score_threshold: 0.4
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error("Failed to get response reader");
+      }
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const jsonStr = line.slice(6);
+            try {
+              const event = JSON.parse(jsonStr);
+
+              if (event.type === 'metadata') {
+                setPrimarySources(event.primary_sources || []);
+                setAdditionalContext(event.additional_context || []);
+                setIsLoading(false); // Stop loading once sources are received
+              } else if (event.type === 'chunk') {
+                setStreamedAnswer(prev => prev + event.content);
+              } else if (event.type === 'done') {
+                // Stream complete
+              } else if (event.type === 'error') {
+                setError(event.message);
+                setIsLoading(false);
+              }
+            } catch (e) {
+              // Silent fail for parse errors
+            }
+          }
+        }
+      }
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to search');
+      setIsLoading(false);
+    }
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -92,7 +168,6 @@ export function HomePage() {
       setIsViewingHistory(false);
       previousQueryRef.current = searchQuery.trim();
       setSearchParams({ q: searchQuery.trim() });
-      // No need to call refetch() - the query will auto-run when searchParams changes
     }
   };
 
@@ -101,7 +176,19 @@ export function HomePage() {
     setSearchQuery("");
     setIsViewingHistory(false);
     previousQueryRef.current = null;
+    setStreamedAnswer("");
+    setPrimarySources([]);
+    setAdditionalContext([]);
   };
+
+  // Trigger streaming search when search params change
+  useEffect(() => {
+    const query = searchParams.get("q");
+    if (query) {
+      performStreamingSearch(query);
+      previousQueryRef.current = query;
+    }
+  }, [searchParams]);
 
   const getStandardDisplayName = (std: string) => {
     return std === "ISO_21502" ? "ISO 21502" : std;
@@ -237,10 +324,10 @@ export function HomePage() {
           )}
 
           {/* Results */}
-          {data && !isLoading && (
+          {(primarySources.length > 0 || streamedAnswer) && (
             <>
               {/* Primary Sources - One per Standard (Side by Side) */}
-              {data.primary_sources && data.primary_sources.length > 0 && (
+              {primarySources && primarySources.length > 0 && (
                 <div className="space-y-4">
                   <div>
                     <h2 className="text-2xl font-semibold">Most Relevant Results</h2>
@@ -250,7 +337,7 @@ export function HomePage() {
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-3">
-                    {data.primary_sources.map((section, index) => (
+                    {primarySources.map((section, index) => (
                       <Card key={`${section.standard}-${section.section_number}-${index}`} className="flex flex-col">
                         <CardHeader>
                           <Badge
@@ -317,23 +404,94 @@ export function HomePage() {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle>Generated Answer</CardTitle>
-                      {data.usage_stats && (
-                        <Badge variant="secondary" className="text-xs">
-                          {data.usage_stats.tokens.total_tokens} tokens
+                      {isLoading && (
+                        <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Streaming...
                         </Badge>
                       )}
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-base leading-relaxed whitespace-pre-line">
-                      {data.answer}
-                    </p>
+                    <div className="prose prose-zinc dark:prose-invert max-w-none">
+                      <Markdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          h1: ({ children }) => (
+                            <h1 className="text-2xl font-bold mt-6 mb-4 first:mt-0 text-foreground">{children}</h1>
+                          ),
+                          h2: ({ children }) => (
+                            <h2 className="text-xl font-semibold mt-6 mb-3 first:mt-0 text-foreground border-b border-border pb-2">{children}</h2>
+                          ),
+                          h3: ({ children }) => (
+                            <h3 className="text-lg font-semibold mt-5 mb-2 first:mt-0 text-foreground">{children}</h3>
+                          ),
+                          h4: ({ children }) => (
+                            <h4 className="text-base font-semibold mt-4 mb-2 text-foreground">{children}</h4>
+                          ),
+                          p: ({ children }) => (
+                            <p className="mb-4 leading-relaxed text-foreground/90">{children}</p>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="list-disc list-outside ml-6 space-y-2 mb-4 text-foreground/90">{children}</ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol className="list-decimal list-outside ml-6 space-y-2 mb-4 text-foreground/90">{children}</ol>
+                          ),
+                          li: ({ children }) => (
+                            <li className="text-foreground/90 leading-relaxed">{children}</li>
+                          ),
+                          strong: ({ children }) => (
+                            <strong className="font-semibold text-foreground">{children}</strong>
+                          ),
+                          em: ({ children }) => (
+                            <em className="italic text-foreground/90">{children}</em>
+                          ),
+                          code: ({ className, children, ...props }) => {
+                            const isInline = !className;
+                            return isInline ? (
+                              <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono text-primary">
+                                {children}
+                              </code>
+                            ) : (
+                              <code className={className} {...props}>
+                                {children}
+                              </code>
+                            );
+                          },
+                          blockquote: ({ children }) => (
+                            <blockquote className="border-l-4 border-primary/50 pl-4 italic my-4 text-foreground/80">
+                              {children}
+                            </blockquote>
+                          ),
+                          table: ({ children }) => (
+                            <div className="overflow-x-auto my-4">
+                              <table className="w-full border-collapse border border-border">
+                                {children}
+                              </table>
+                            </div>
+                          ),
+                          th: ({ children }) => (
+                            <th className="border border-border bg-muted px-4 py-2 text-left font-semibold">
+                              {children}
+                            </th>
+                          ),
+                          td: ({ children }) => (
+                            <td className="border border-border px-4 py-2">
+                              {children}
+                            </td>
+                          ),
+                        }}
+                      >
+                        {streamedAnswer}
+                      </Markdown>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
 
               {/* Additional Context Section */}
-              {data.additional_context && data.additional_context.length > 0 && (
+              {additionalContext && additionalContext.length > 0 && (
                 <div className="space-y-4">
                   <Button
                     variant="outline"
@@ -341,14 +499,14 @@ export function HomePage() {
                     onClick={() => setShowAdditional(!showAdditional)}
                   >
                     <span className="flex-1 text-left">
-                      Additional Reading ({data.additional_context.length} sections)
+                      Additional Reading ({additionalContext.length} sections)
                     </span>
                     <ChevronDown className={`h-4 w-4 transition-transform ${showAdditional ? 'rotate-180' : ''}`} />
                   </Button>
 
                   {showAdditional && (
                     <div className="grid gap-4 md:grid-cols-2">
-                      {data.additional_context.map((section, index) => (
+                      {additionalContext.map((section, index) => (
                         <Card key={`${section.standard}-${section.section_number}-additional-${index}`}>
                           <CardHeader>
                             <Badge

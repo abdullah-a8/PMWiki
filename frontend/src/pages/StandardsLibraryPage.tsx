@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/lib/api";
-import type { StandardInfo, SectionListItem } from "@/types";
+import type { StandardInfo } from "@/types";
 
 export function StandardsLibraryPage() {
   const { standard } = useParams<{ standard: string }>();

@@ -1,6 +1,6 @@
 """
 Groq LLM Service
-Handles LLM operations using Groq's llama-3.3-70b-versatile model
+Handles LLM operations using Groq's openai/gpt-oss-120b model
 """
 import os
 from typing import List, Dict, Any, Optional
@@ -19,7 +19,7 @@ load_dotenv()
 
 
 class GroqService:
-    """Service for generating responses using Groq's Llama 3.3 70B model"""
+    """Service for generating responses using Groq's OpenAI GPT-OSS 120B model"""
 
     def __init__(self, api_key: Optional[str] = None):
         """
@@ -33,7 +33,7 @@ class GroqService:
             raise ValueError("GROQ_API_KEY not found in environment variables")
 
         self.client = Groq(api_key=self.api_key, max_retries=2, timeout=30.0)
-        self.model = "llama-3.3-70b-versatile"
+        self.model = "openai/gpt-oss-120b"
 
         logger.info(f"GroqService initialized with model: {self.model}")
 
@@ -92,6 +92,54 @@ class GroqService:
             raise Exception(f"Groq API error: {e.status_code}")
         except Exception as e:
             logger.error(f"Unexpected error generating response: {e}")
+            raise
+
+    def generate_response_stream(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.3,
+        max_tokens: Optional[int] = 2048,
+        top_p: float = 1.0
+    ):
+        """
+        Generate a streaming completion using Groq API
+
+        Args:
+            messages: List of message dicts with 'role' and 'content'
+            temperature: Sampling temperature (0.0-2.0), lower = more focused
+            max_tokens: Maximum tokens to generate
+            top_p: Nucleus sampling parameter
+
+        Yields:
+            Chunks of the response as they arrive
+        """
+        try:
+            logger.info(f"Generating streaming response with {len(messages)} messages")
+
+            stream = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                top_p=top_p,
+                stream=True
+            )
+
+            for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+
+        except groq.APIConnectionError as e:
+            logger.error(f"Could not reach Groq API: {e}")
+            raise Exception(f"Groq API connection error: {e}")
+        except groq.RateLimitError as e:
+            logger.error(f"Rate limit exceeded: {e}")
+            raise Exception(f"Groq API rate limit exceeded. Please try again later.")
+        except groq.APIStatusError as e:
+            logger.error(f"Groq API error: {e.status_code} - {e.response}")
+            raise Exception(f"Groq API error: {e.status_code}")
+        except Exception as e:
+            logger.error(f"Unexpected error generating streaming response: {e}")
             raise
 
     def generate_citation_response(

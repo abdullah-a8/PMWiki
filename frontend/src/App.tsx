@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { RootLayout } from "./components/layout/RootLayout";
 import { HomePage } from "./pages/HomePage";
-import { ComparePage } from "./pages/ComparePage";
+import { ComparePageStreaming } from "./pages/ComparePageStreaming";
 import { ProcessGeneratorPage } from "./pages/ProcessGeneratorPage";
 import { LibraryPage } from "./pages/LibraryPage";
 import { SectionDetailPage } from "./pages/SectionDetailPage";
@@ -13,7 +13,7 @@ function App() {
       <Routes>
         <Route path="/" element={<RootLayout />}>
           <Route index element={<HomePage />} />
-          <Route path="compare" element={<ComparePage />} />
+          <Route path="compare" element={<ComparePageStreaming />} />
           <Route path="generate" element={<ProcessGeneratorPage />} />
           <Route path="library" element={<LibraryPage />} />
           <Route path="library/:standard" element={<StandardsLibraryPage />} />

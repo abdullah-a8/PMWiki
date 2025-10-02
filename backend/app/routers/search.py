@@ -3,9 +3,11 @@ Search endpoints router
 Handles cross-standard semantic search with RAG and section retrieval
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Path
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 import logging
+import json
 
 from app.schemas.search import (
     SearchRequest,
@@ -17,6 +19,7 @@ from app.schemas.section import SectionResponse, SectionListResponse, SectionLis
 from app.services.rag_service import get_rag_service
 from app.services.qdrant_service import get_qdrant_service
 from app.services.voyage_service import get_voyage_service
+from app.services.groq_service import get_groq_service
 from app.db.database import get_db
 from app.models.document_section import CitationFormat
 
@@ -83,6 +86,239 @@ async def semantic_search(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Search operation failed. Please try again later."
         )
+
+
+@router.post(
+    "/search/stream",
+    summary="Stream cross-standard semantic search",
+    description="""
+    Stream semantic search results with real-time LLM answer generation.
+
+    Returns:
+    - Server-Sent Events (SSE) stream
+    - Initial event contains primary sources and additional context
+    - Text chunks stream as LLM generates the answer
+    - Final completion event
+
+    The stream includes:
+    1. Metadata event with all sources
+    2. Answer chunks as they're generated
+    3. Completion event with token usage
+    """,
+    response_description="Streaming search results with Server-Sent Events"
+)
+async def semantic_search_stream(
+    request: SearchRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Stream RAG search results with real-time LLM generation.
+    """
+    async def generate():
+        try:
+            logger.info(f"Streaming search request: '{request.query}'")
+
+            # Get services
+            voyage_service = get_voyage_service()
+            qdrant_service = get_qdrant_service()
+            groq_service = get_groq_service()
+
+            # Step 1: Generate query embedding
+            query_embedding = voyage_service.embed_query(request.query)
+
+            # Step 2: Search for relevant chunks from each standard
+            standards = ["PMBOK", "PRINCE2", "ISO_21502"]
+            all_results = {}
+
+            for standard in standards:
+                results = qdrant_service.search_by_standard(
+                    query_vector=query_embedding,
+                    standard=standard,
+                    limit=request.top_k_per_standard,
+                    score_threshold=request.score_threshold
+                )
+                all_results[standard] = results
+
+            # Step 3: Fetch full metadata from database for all chunks
+            chunk_data = {}
+            for standard, results in all_results.items():
+                if not results:
+                    chunk_data[standard] = []
+                    continue
+
+                chunk_ids = [str(result['id']) for result in results]
+                scores = {str(result['id']): result['score'] for result in results}
+
+                query = text("""
+                    SELECT
+                        id::text as id,
+                        standard::text,
+                        section_number,
+                        section_title,
+                        page_start,
+                        page_end,
+                        content_cleaned as content,
+                        citation_key
+                    FROM document_sections
+                    WHERE id::text = ANY(:ids)
+                    ORDER BY array_position(:ids, id::text)
+                """)
+
+                rows = db.execute(query, {"ids": chunk_ids}).fetchall()
+
+                chunks = []
+                for row in rows:
+                    chunk = dict(row._mapping)
+                    chunk['score'] = scores.get(chunk['id'], 0.0)
+                    chunks.append(chunk)
+
+                chunk_data[standard] = chunks
+
+            # Step 4: Separate primary (top 1) and additional chunks per standard
+            primary_chunks = []
+            additional_chunks = []
+            year_map = {'PMBOK': '2021', 'PRINCE2': '2017', 'ISO_21502': '2020'}
+
+            for standard in standards:
+                if chunk_data[standard]:
+                    # Top chunk is primary
+                    primary = chunk_data[standard][0]
+                    primary['is_primary'] = True
+                    primary_chunks.append(primary)
+
+                    # Rest are additional
+                    for chunk in chunk_data[standard][1:]:
+                        chunk['is_primary'] = False
+                        additional_chunks.append(chunk)
+
+            # Format sources for frontend
+            def format_source(chunk):
+                std = chunk['standard']
+                year = year_map.get(std, '2021')
+                page_ref = f"p. {chunk['page_start']}"
+                if chunk.get('page_end') and chunk['page_end'] != chunk['page_start']:
+                    page_ref = f"pp. {chunk['page_start']}-{chunk['page_end']}"
+                citation = f"{std} ({year}), Section {chunk['section_number']}, {page_ref}"
+
+                return {
+                    'id': chunk['id'],
+                    'standard': chunk['standard'],
+                    'section_number': chunk['section_number'],
+                    'section_title': chunk['section_title'],
+                    'page_start': chunk['page_start'],
+                    'page_end': chunk.get('page_end'),
+                    'content': chunk['content'],
+                    'citation': citation,
+                    'relevance_score': chunk['score']
+                }
+
+            # Send initial metadata with sources
+            metadata_event = {
+                'type': 'metadata',
+                'query': request.query,
+                'primary_sources': [format_source(c) for c in primary_chunks],
+                'additional_context': [format_source(c) for c in additional_chunks]
+            }
+            yield f"data: {json.dumps(metadata_event)}\n\n"
+
+            # Step 5: Build prompt and stream LLM response
+            all_context = primary_chunks + additional_chunks
+
+            # Build prompt (same as citation response)
+            primary_for_llm = [c for c in all_context if c.get('is_primary', False)]
+            additional_for_llm = [c for c in all_context if not c.get('is_primary', False)]
+
+            prompt_parts = [f"Question: {request.query}\n"]
+
+            if primary_for_llm:
+                prompt_parts.append("\n=== PRIMARY CONTEXT (Highest Relevance) ===\n")
+                for chunk in primary_for_llm:
+                    std = chunk['standard']
+                    year = year_map.get(std, '2021')
+                    page_ref = f"p. {chunk['page_start']}"
+                    if chunk.get('page_end') and chunk['page_end'] != chunk['page_start']:
+                        page_ref = f"pp. {chunk['page_start']}-{chunk['page_end']}"
+                    citation = f"Section {chunk['section_number']}: {chunk['section_title']} ({page_ref})"
+                    prompt_parts.append(f"\n**{std}** - {citation}")
+                    prompt_parts.append(f"Content: {chunk['content']}\n")
+
+            if additional_for_llm:
+                prompt_parts.append("\n=== ADDITIONAL CONTEXT (Supporting Information) ===\n")
+                for chunk in additional_for_llm:
+                    std = chunk['standard']
+                    year = year_map.get(std, '2021')
+                    page_ref = f"p. {chunk['page_start']}"
+                    if chunk.get('page_end') and chunk['page_end'] != chunk['page_start']:
+                        page_ref = f"pp. {chunk['page_start']}-{chunk['page_end']}"
+                    citation = f"Section {chunk['section_number']}: {chunk['section_title']} ({page_ref})"
+                    prompt_parts.append(f"\n**{std}** - {citation}")
+                    prompt_parts.append(f"Content: {chunk['content'][:300]}...\n")
+
+            prompt_parts.append("\nProvide a comprehensive answer with proper citations:")
+
+            system_prompt = """You are an expert project management assistant specializing in PMBOK 7th Edition (2021), PRINCE2 (2017), and ISO 21502:2020 standards.
+
+Your role is to provide accurate, citation-backed answers to questions about project management standards. You MUST:
+
+1. **Citation Requirements**:
+   - Always cite the exact standard, section number, and page number
+   - Use format: "(Standard Section X.Y, p. Z)" or "(Standard Section X.Y, pp. Z1-Z2)"
+   - Only reference information explicitly provided in the context
+   - Never fabricate or infer information not in the source material
+
+2. **Response Structure**:
+   - Start with a clear, direct answer to the question
+   - Provide specific details from EACH standard's perspective
+   - Highlight key differences or similarities between standards
+   - Keep responses concise but comprehensive (2-4 paragraphs)
+
+3. **Accuracy & Tone**:
+   - Be precise and academic in tone
+   - Use exact terminology from the standards
+   - If information is not available in context, explicitly state this
+   - Never make assumptions beyond what's in the provided text"""
+
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": "".join(prompt_parts)}
+            ]
+
+            # Stream the answer
+            for chunk in groq_service.generate_response_stream(
+                messages=messages,
+                temperature=0.3,
+                max_tokens=2048
+            ):
+                chunk_event = {
+                    'type': 'chunk',
+                    'content': chunk
+                }
+                yield f"data: {json.dumps(chunk_event)}\n\n"
+
+            # Send completion event
+            completion_event = {
+                'type': 'done'
+            }
+            yield f"data: {json.dumps(completion_event)}\n\n"
+
+            logger.info(f"Streaming search completed for query: '{request.query}'")
+
+        except Exception as e:
+            logger.error(f"Streaming search failed for query '{request.query}': {e}")
+            error_event = {
+                'type': 'error',
+                'message': str(e)
+            }
+            yield f"data: {json.dumps(error_event)}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no"
+        }
+    )
 
 
 @router.get(

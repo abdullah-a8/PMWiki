@@ -2,6 +2,7 @@
 
 // Source Reference (from search results)
 export interface SourceReference {
+  id: string
   standard: string
   section_number: string
   section_title: string

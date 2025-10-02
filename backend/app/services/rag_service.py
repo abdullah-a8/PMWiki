@@ -108,6 +108,7 @@ class RAGService:
             'answer': llm_response['content'],
             'primary_sources': [
                 {
+                    'id': chunk['id'],
                     'standard': chunk['standard'],
                     'section_number': chunk['section_number'],
                     'section_title': chunk['section_title'],
@@ -121,6 +122,7 @@ class RAGService:
             ],
             'additional_context': [
                 {
+                    'id': chunk['id'],
                     'standard': chunk['standard'],
                     'section_number': chunk['section_number'],
                     'section_title': chunk['section_title'],

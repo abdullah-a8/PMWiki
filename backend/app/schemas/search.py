@@ -50,6 +50,7 @@ class SearchRequest(BaseModel):
 
 class SourceReference(BaseModel):
     """Schema for a source reference with citation"""
+    id: str = Field(..., description="Section UUID")
     standard: str = Field(..., description="Standard name (PMBOK, PRINCE2, ISO_21502)")
     section_number: str = Field(..., description="Section identifier")
     section_title: str = Field(..., description="Section title")

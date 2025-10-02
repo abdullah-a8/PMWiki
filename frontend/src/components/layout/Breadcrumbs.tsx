@@ -1,3 +1,4 @@
+import React from "react";
 import { useLocation, Link } from "react-router-dom";
 import { ChevronRight, Home } from "lucide-react";
 import {
@@ -47,11 +48,11 @@ export function Breadcrumbs() {
           const path = getSegmentPath(index);
 
           return (
-            <>
-              <BreadcrumbSeparator key={`sep-${path}`}>
+            <React.Fragment key={path}>
+              <BreadcrumbSeparator>
                 <ChevronRight className="h-4 w-4" />
               </BreadcrumbSeparator>
-              <BreadcrumbItem key={path}>
+              <BreadcrumbItem>
                 {isLast ? (
                   <BreadcrumbPage>{formatSegment(segment)}</BreadcrumbPage>
                 ) : (
@@ -60,7 +61,7 @@ export function Breadcrumbs() {
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
-            </>
+            </React.Fragment>
           );
         })}
       </BreadcrumbList>

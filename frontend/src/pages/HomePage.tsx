@@ -292,7 +292,7 @@ export function HomePage() {
                               variant="outline"
                               size="sm"
                               className="w-full"
-                              onClick={() => navigate(`/library/${section.standard}`)}
+                              onClick={() => navigate(`/sections/${section.id}`)}
                             >
                               View in Library
                             </Button>
@@ -369,7 +369,7 @@ export function HomePage() {
                               variant="outline"
                               size="sm"
                               className="w-full"
-                              onClick={() => navigate(`/library/${section.standard}`)}
+                              onClick={() => navigate(`/sections/${section.id}`)}
                             >
                               View in Library
                             </Button>

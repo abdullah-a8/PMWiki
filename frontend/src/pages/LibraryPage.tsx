@@ -21,7 +21,7 @@ const standards = [
   },
   {
     name: "ISO_21502",
-    fullName: "ISO 21502:2020",
+    fullName: "ISO 21502",
     description: "International standard providing guidance on project management principles and processes",
     color: "bg-teal-500/10 text-teal-500 border-teal-500/20",
     icon: "📙",
@@ -46,10 +46,10 @@ export function LibraryPage() {
         {standards.map((standard) => (
           <Card
             key={standard.name}
-            className="hover:shadow-lg transition-shadow cursor-pointer"
+            className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col"
             onClick={() => navigate(`/library/${standard.name}`)}
           >
-            <CardHeader>
+            <CardHeader className="flex-1">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-4xl">{standard.icon}</span>
                 <Badge
@@ -80,50 +80,6 @@ export function LibraryPage() {
           </Card>
         ))}
       </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>
-            Common tasks to help you navigate the library
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Button
-            variant="outline"
-            className="w-full justify-start"
-            onClick={() => navigate("/search")}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Search across all standards
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-start"
-            onClick={() => navigate("/compare")}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Compare standards side-by-side
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Info Card */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-4">
-            <BookOpen className="h-5 w-5 text-muted-foreground mt-0.5" />
-            <div>
-              <h3 className="font-semibold mb-1">About the Library</h3>
-              <p className="text-sm text-muted-foreground">
-                This library contains comprehensive documentation from three major project management standards.
-                You can browse sections, search for specific topics, and compare approaches across standards.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

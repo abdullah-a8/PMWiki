@@ -1,16 +1,703 @@
-export function ProcessGeneratorPage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Generate Process</h1>
-        <p className="text-muted-foreground mt-2">
-          Create tailored project processes based on your scenario
-        </p>
-      </div>
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Loader2,
+  X,
+  Briefcase,
+  Code,
+  Building2,
+  FlaskConical,
+  Package,
+  Users,
+  Calendar,
+  Hammer,
+  CheckCircle2,
+  AlertCircle,
+  ArrowRight,
+  Copy,
+  Check,
+  Workflow,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
-      <div className="text-muted-foreground">
-        Process generator interface coming soon...
-      </div>
+// Form validation schema
+const formSchema = z.object({
+  project_type: z.enum([
+    "software_development",
+    "construction",
+    "consulting",
+    "research",
+    "product_development",
+    "organizational_change",
+    "event_management",
+    "infrastructure",
+    "other",
+  ]),
+  project_description: z
+    .string()
+    .min(10, "Description must be at least 10 characters")
+    .max(1000, "Description must not exceed 1000 characters"),
+  project_size: z.enum(["small", "medium", "large"]),
+  constraints: z.string().optional(),
+  priorities: z.string().optional(),
+  focus_areas: z.string().optional(),
+});
+
+type FormData = z.infer<typeof formSchema>;
+
+// Project type options with icons
+const projectTypes = [
+  { value: "software_development", label: "Software Development", icon: Code },
+  { value: "construction", label: "Construction", icon: Building2 },
+  { value: "consulting", label: "Consulting", icon: Briefcase },
+  { value: "research", label: "Research", icon: FlaskConical },
+  { value: "product_development", label: "Product Development", icon: Package },
+  { value: "organizational_change", label: "Organizational Change", icon: Users },
+  { value: "event_management", label: "Event Management", icon: Calendar },
+  { value: "infrastructure", label: "Infrastructure", icon: Hammer },
+  { value: "other", label: "Other", icon: Briefcase },
+];
+
+// Response types
+interface ProcessPhase {
+  phase_name: string;
+  description: string;
+  key_activities: string[];
+  deliverables: string[];
+  duration_guidance?: string;
+}
+
+interface ProcessRecommendation {
+  area: string;
+  recommendation: string;
+  justification: string;
+  source_standards: string[];
+  citations: string[];
+}
+
+interface ProcessResponse {
+  project_type: string;
+  overview: string;
+  phases: ProcessPhase[];
+  key_recommendations: ProcessRecommendation[];
+  tailoring_rationale: string;
+  standards_alignment: {
+    PMBOK?: string;
+    PRINCE2?: string;
+    ISO_21502?: string;
+  };
+  usage_stats: {
+    model: string;
+    tokens: {
+      prompt_tokens: number;
+      completion_tokens: number;
+      total_tokens: number;
+    };
+  };
+}
+
+export function ProcessGeneratorPage() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<ProcessResponse | null>(null);
+  const [copiedCitation, setCopiedCitation] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      project_size: "medium",
+      project_type: "software_development",
+    },
+  });
+
+  const projectType = watch("project_type");
+  const projectSize = watch("project_size");
+
+  const onSubmit = async (data: FormData) => {
+    setIsLoading(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      // Convert comma-separated strings to arrays
+      const payload = {
+        project_type: data.project_type,
+        project_description: data.project_description,
+        project_size: data.project_size,
+        constraints: data.constraints
+          ? data.constraints.split(",").map((s) => s.trim()).filter(Boolean)
+          : undefined,
+        priorities: data.priorities
+          ? data.priorities.split(",").map((s) => s.trim()).filter(Boolean)
+          : undefined,
+        focus_areas: data.focus_areas
+          ? data.focus_areas.split(",").map((s) => s.trim()).filter(Boolean)
+          : undefined,
+      };
+
+      const response = await fetch("http://localhost:8000/api/v1/generate-process", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      setResult(responseData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate process");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getStandardBadgeColor = (standard: string) => {
+    const colors: Record<string, string> = {
+      PMBOK: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+      PRINCE2: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+      ISO_21502: "bg-teal-500/10 text-teal-500 border-teal-500/20",
+    };
+    return colors[standard] || "bg-zinc-500/10 text-zinc-500 border-zinc-500/20";
+  };
+
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedCitation(id);
+    setTimeout(() => setCopiedCitation(null), 2000);
+  };
+
+  const hasGenerated = result !== null;
+
+  return (
+    <div className="w-full">
+      {/* Initial centered form view */}
+      {!hasGenerated && (
+        <div className="mx-auto max-w-3xl space-y-8 pb-12">
+          {/* Header */}
+          <div className="text-center space-y-3 mb-8">
+            <div className="inline-flex items-center gap-2 mb-2">
+              <Workflow className="h-6 w-6 text-primary" />
+              <h1 className="text-4xl font-bold tracking-tight">Generate Process</h1>
+            </div>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Create a tailored project management process based on your specific scenario
+            </p>
+          </div>
+
+          {/* Form Card */}
+          <Card className="border-primary/20 shadow-sm">
+            <CardHeader>
+              <CardTitle>Project Scenario</CardTitle>
+              <CardDescription>
+                Describe your project details to generate a customized process
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                {/* Project Type */}
+                <div className="space-y-2">
+                  <Label htmlFor="project_type">Project Type *</Label>
+                  <Select
+                    value={projectType}
+                    onValueChange={(value) => setValue("project_type", value as any)}
+                  >
+                    <SelectTrigger className="h-12">
+                      <SelectValue placeholder="Select project type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projectTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          <div className="flex items-center gap-2">
+                            <type.icon className="h-4 w-4" />
+                            <span>{type.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.project_type && (
+                    <p className="text-sm text-destructive">{errors.project_type.message}</p>
+                  )}
+                </div>
+
+                {/* Project Description */}
+                <div className="space-y-2">
+                  <Label htmlFor="project_description">Project Description *</Label>
+                  <Textarea
+                    id="project_description"
+                    placeholder="Describe your project, its goals, and key characteristics (e.g., 'Developing a mobile app for real-time project tracking with integration to existing enterprise systems')"
+                    className="min-h-[120px] resize-none"
+                    {...register("project_description")}
+                  />
+                  {errors.project_description && (
+                    <p className="text-sm text-destructive">{errors.project_description.message}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {watch("project_description")?.length || 0} / 1000 characters
+                  </p>
+                </div>
+
+                {/* Project Size */}
+                <div className="space-y-2">
+                  <Label htmlFor="project_size">Project Size *</Label>
+                  <Select
+                    value={projectSize}
+                    onValueChange={(value) => setValue("project_size", value as any)}
+                  >
+                    <SelectTrigger className="h-12">
+                      <SelectValue placeholder="Select project size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="small">
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium">Small</span>
+                          <span className="text-xs text-muted-foreground">
+                            &lt; 6 months, &lt; 5 people
+                          </span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="medium">
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium">Medium</span>
+                          <span className="text-xs text-muted-foreground">
+                            6-12 months, 5-20 people
+                          </span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="large">
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium">Large</span>
+                          <span className="text-xs text-muted-foreground">
+                            &gt; 12 months, &gt; 20 people
+                          </span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.project_size && (
+                    <p className="text-sm text-destructive">{errors.project_size.message}</p>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Optional Fields */}
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-sm font-semibold mb-4">Additional Details (Optional)</h3>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Provide comma-separated values for better tailoring
+                    </p>
+                  </div>
+
+                  {/* Constraints */}
+                  <div className="space-y-2">
+                    <Label htmlFor="constraints">Key Constraints</Label>
+                    <Input
+                      id="constraints"
+                      placeholder="e.g., tight budget, fixed deadline, regulatory compliance"
+                      {...register("constraints")}
+                    />
+                    {errors.constraints && (
+                      <p className="text-sm text-destructive">{errors.constraints.message}</p>
+                    )}
+                  </div>
+
+                  {/* Priorities */}
+                  <div className="space-y-2">
+                    <Label htmlFor="priorities">Key Priorities</Label>
+                    <Input
+                      id="priorities"
+                      placeholder="e.g., quality, speed, stakeholder satisfaction"
+                      {...register("priorities")}
+                    />
+                    {errors.priorities && (
+                      <p className="text-sm text-destructive">{errors.priorities.message}</p>
+                    )}
+                  </div>
+
+                  {/* Focus Areas */}
+                  <div className="space-y-2">
+                    <Label htmlFor="focus_areas">Focus Areas</Label>
+                    <Input
+                      id="focus_areas"
+                      placeholder="e.g., risk management, change control, quality assurance"
+                      {...register("focus_areas")}
+                    />
+                    {errors.focus_areas && (
+                      <p className="text-sm text-destructive">{errors.focus_areas.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-12 text-base rounded-xl"
+                  size="lg"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Generating Process...
+                    </>
+                  ) : (
+                    <>
+                      <Workflow className="mr-2 h-5 w-5" />
+                      Generate Tailored Process
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Error Display */}
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+        </div>
+      )}
+
+      {/* Results View */}
+      {hasGenerated && result && (
+        <div className="max-w-6xl mx-auto space-y-8 pb-12">
+          {/* Compact Header */}
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Workflow className="h-5 w-5 text-primary" />
+              Generated Process
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Tailored project management process for your scenario
+            </p>
+          </div>
+
+          {/* Process Overview Card */}
+          <Card className="border-primary/30 shadow-lg bg-gradient-to-br from-background to-muted/20">
+            <CardHeader>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <CardTitle className="text-2xl mb-2">Process Overview</CardTitle>
+                  <CardDescription className="text-base">
+                    Recommended approach for:{" "}
+                    <span className="font-semibold text-foreground">
+                      {projectTypes.find((t) => t.value === result.project_type)?.label ||
+                        result.project_type}
+                    </span>
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setResult(null);
+                    setError(null);
+                  }}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  New Process
+                </Button>
+              </div>
+              <Separator className="mt-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="prose prose-zinc dark:prose-invert max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {result.overview}
+                </ReactMarkdown>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Process Phases */}
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-2xl font-semibold">Process Phases</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Recommended phases with activities and deliverables
+              </p>
+            </div>
+
+            <Accordion type="single" collapsible className="space-y-4">
+              {result.phases.map((phase, index) => (
+                <AccordionItem
+                  key={index}
+                  value={`phase-${index}`}
+                  className="border rounded-xl px-6 bg-card"
+                >
+                  <AccordionTrigger className="hover:no-underline py-6">
+                    <div className="flex items-center gap-3 text-left">
+                      <Badge variant="outline" className="shrink-0">
+                        Phase {index + 1}
+                      </Badge>
+                      <span className="font-semibold text-lg">{phase.phase_name}</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-6 pt-2">
+                    <div className="space-y-4">
+                      {/* Description */}
+                      <p className="text-muted-foreground">{phase.description}</p>
+
+                      {phase.duration_guidance && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">{phase.duration_guidance}</span>
+                        </div>
+                      )}
+
+                      <Separator />
+
+                      {/* Key Activities */}
+                      <div>
+                        <h4 className="font-semibold mb-2 flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-primary" />
+                          Key Activities
+                        </h4>
+                        <ul className="list-disc list-outside ml-6 space-y-1 text-sm text-foreground/90">
+                          {phase.key_activities.map((activity, i) => (
+                            <li key={i}>{activity}</li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* Deliverables */}
+                      <div>
+                        <h4 className="font-semibold mb-2 flex items-center gap-2">
+                          <Package className="h-4 w-4 text-primary" />
+                          Deliverables
+                        </h4>
+                        <ul className="list-disc list-outside ml-6 space-y-1 text-sm text-foreground/90">
+                          {phase.deliverables.map((deliverable, i) => (
+                            <li key={i}>{deliverable}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+
+          {/* Key Recommendations */}
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-2xl font-semibold">Key Recommendations</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Evidence-based guidance tailored to your project
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {result.key_recommendations.map((rec, index) => (
+                <Card key={index} className="hover:shadow-lg transition-shadow duration-300">
+                  <CardHeader className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <Badge variant="outline" className="w-fit">
+                        {rec.area}
+                      </Badge>
+                      <div className="flex gap-1">
+                        {rec.source_standards.map((std) => (
+                          <Badge
+                            key={std}
+                            variant="outline"
+                            className={`text-xs ${getStandardBadgeColor(std)}`}
+                          >
+                            {std === "ISO_21502" ? "ISO 21502" : std}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <CardTitle className="text-base leading-tight">
+                      {rec.recommendation}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm text-muted-foreground">{rec.justification}</p>
+
+                    {rec.citations.length > 0 && (
+                      <>
+                        <Separator />
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold text-muted-foreground">
+                            Citations:
+                          </p>
+                          {rec.citations.map((citation, i) => (
+                            <div key={i} className="flex items-start justify-between gap-2">
+                              <p className="text-xs text-muted-foreground italic flex-1">
+                                {citation}
+                              </p>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 shrink-0"
+                                onClick={() => copyToClipboard(citation, `rec-${index}-${i}`)}
+                              >
+                                {copiedCitation === `rec-${index}-${i}` ? (
+                                  <Check className="h-3 w-3 text-green-500" />
+                                ) : (
+                                  <Copy className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {/* Tailoring Rationale */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Tailoring Rationale</CardTitle>
+              <CardDescription>
+                Why this process is customized for your specific scenario
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {result.tailoring_rationale}
+                </ReactMarkdown>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Standards Alignment */}
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-2xl font-semibold">Standards Alignment</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                How this process draws from each standard
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              {/* PMBOK */}
+              {result.standards_alignment.PMBOK && (
+                <Card className="border-blue-500/20">
+                  <CardHeader>
+                    <Badge
+                      variant="outline"
+                      className={`w-fit ${getStandardBadgeColor("PMBOK")}`}
+                    >
+                      PMBOK
+                    </Badge>
+                    <CardDescription className="text-xs mt-2">
+                      Project Management Body of Knowledge
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-foreground/90">
+                      {result.standards_alignment.PMBOK}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* PRINCE2 */}
+              {result.standards_alignment.PRINCE2 && (
+                <Card className="border-purple-500/20">
+                  <CardHeader>
+                    <Badge
+                      variant="outline"
+                      className={`w-fit ${getStandardBadgeColor("PRINCE2")}`}
+                    >
+                      PRINCE2
+                    </Badge>
+                    <CardDescription className="text-xs mt-2">
+                      Projects IN Controlled Environments
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-foreground/90">
+                      {result.standards_alignment.PRINCE2}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* ISO 21502 */}
+              {result.standards_alignment.ISO_21502 && (
+                <Card className="border-teal-500/20">
+                  <CardHeader>
+                    <Badge
+                      variant="outline"
+                      className={`w-fit ${getStandardBadgeColor("ISO_21502")}`}
+                    >
+                      ISO 21502
+                    </Badge>
+                    <CardDescription className="text-xs mt-2">
+                      International Standard for PM
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-foreground/90">
+                      {result.standards_alignment.ISO_21502}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+
+          {/* Usage Stats */}
+          {result.usage_stats && (
+            <Card className="bg-muted/30">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    Generated using {result.usage_stats.model}
+                  </span>
+                  <Badge variant="secondary">
+                    {result.usage_stats.tokens.total_tokens.toLocaleString()} tokens
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }

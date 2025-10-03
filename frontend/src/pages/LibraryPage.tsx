@@ -32,17 +32,21 @@ export function LibraryPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Browse Library</h1>
-        <p className="text-muted-foreground mt-2">
-          Explore PM standards and their sections
-        </p>
-      </div>
+    <div className="min-h-[calc(100vh-8rem)] flex flex-col justify-center">
+      <div className="max-w-5xl mx-auto space-y-8 pb-12 w-full">
+        {/* Header - Centered and Modern */}
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center gap-2 mb-2">
+            <BookOpen className="h-6 w-6 text-primary" />
+            <h1 className="text-4xl font-bold tracking-tight">Browse Library</h1>
+          </div>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Explore PM standards and their sections
+          </p>
+        </div>
 
-      {/* Standards Grid */}
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
+        {/* Standards Grid */}
+        <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
         {standards.map((standard) => (
           <Card
             key={standard.name}
@@ -79,6 +83,7 @@ export function LibraryPage() {
             </CardContent>
           </Card>
         ))}
+        </div>
       </div>
     </div>
   );

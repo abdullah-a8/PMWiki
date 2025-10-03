@@ -252,7 +252,14 @@ export function HomePage() {
       {!hasSearched && (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)]">
           <div className="text-center mb-16">
-            <h1 className="text-6xl font-bold mb-4 tracking-tight">PMWiki</h1>
+            <div className="flex items-center justify-center gap-4 mb-4">
+              <img 
+                src="/documents.svg" 
+                alt="PMWiki Logo" 
+                className="w-12 h-12 text-primary"
+              />
+              <h1 className="text-6xl font-bold tracking-tight">PMWiki</h1>
+            </div>
             <p className="text-lg text-muted-foreground">
               Citation-focused search for PM standards
             </p>

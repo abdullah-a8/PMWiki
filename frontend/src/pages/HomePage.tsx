@@ -49,11 +49,19 @@ export function HomePage() {
       const primarySourcesCount = primarySources?.length || 0;
       const standards = [...new Set(primarySources?.map(s => s.standard) || [])];
 
-      searchHistoryStorage.addSearch(query, primarySourcesCount, standards, true);
+      searchHistoryStorage.addSearch(
+        query,
+        primarySourcesCount,
+        standards,
+        true,
+        primarySources,
+        additionalContext,
+        streamedAnswer
+      );
       window.dispatchEvent(new Event('searchHistoryUpdated'));
       previousQueryRef.current = query;
     }
-  }, [isLoading, streamedAnswer, searchParams, isViewingHistory, primarySources]);
+  }, [isLoading, streamedAnswer, searchParams, isViewingHistory, primarySources, additionalContext]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -181,14 +189,40 @@ export function HomePage() {
     setAdditionalContext([]);
   };
 
-  // Trigger streaming search when search params change
+  // Trigger streaming search when search params change OR load from history
   useEffect(() => {
     const query = searchParams.get("q");
-    if (query) {
+    if (!query) return;
+
+    // Check if navigation came from history click
+    const fromHistory = (location.state as any)?.fromHistory === true;
+
+    if (fromHistory) {
+      // ONLY load from cached history - NEVER trigger a backend request for history items
+      const cachedSearch = searchHistoryStorage.getSearchByQuery(query);
+
+      if (cachedSearch && cachedSearch.answer && cachedSearch.primarySources) {
+        // We have cached results - use them
+        setStreamedAnswer(cachedSearch.answer);
+        setPrimarySources(cachedSearch.primarySources);
+        setAdditionalContext(cachedSearch.additionalContext || []);
+        setIsLoading(false);
+        setError(null);
+      } else {
+        // No cached results - this should never happen because getHistory() filters them out
+        // But if it does, show an error instead of making a backend request
+        setError("This search is no longer available in history. Please search again.");
+        setIsLoading(false);
+        setStreamedAnswer("");
+        setPrimarySources([]);
+        setAdditionalContext([]);
+      }
+    } else {
+      // This is a new search - always fetch from backend
       performStreamingSearch(query);
       previousQueryRef.current = query;
     }
-  }, [searchParams]);
+  }, [searchParams, location.state]);
 
   const getStandardDisplayName = (std: string) => {
     return std === "ISO_21502" ? "ISO 21502" : std;

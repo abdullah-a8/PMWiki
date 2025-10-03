@@ -261,6 +261,115 @@ async def compare_topic_stream(
 
 
 @router.post(
+    "/sections-by-topic",
+    summary="Get top sections by topic for side-by-side comparison",
+    description="""
+    Search for the most relevant section from each standard for a given topic.
+
+    Returns:
+    - Top 1 section from PMBOK
+    - Top 1 section from PRINCE2
+    - Top 1 section from ISO 21502
+
+    Use this for side-by-side section comparison without AI analysis.
+    """,
+    response_description="Top sections from each standard"
+)
+async def get_sections_by_topic(
+    request: ComparisonRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Get the most relevant section from each standard for a topic.
+
+    This endpoint returns full section content for side-by-side comparison.
+    """
+    try:
+        logger.info(f"Section search request for topic: '{request.topic}'")
+
+        # Get services
+        voyage_service = get_voyage_service()
+        qdrant_service = get_qdrant_service()
+
+        # Embed the topic
+        topic_embedding = voyage_service.embed_query(request.topic)
+
+        # Search each standard (top 1 only)
+        standards = ["PMBOK", "PRINCE2", "ISO_21502"]
+        all_sections = {}
+
+        for standard in standards:
+            results = qdrant_service.search_by_standard(
+                query_vector=topic_embedding,
+                standard=standard,
+                limit=1,  # Top 1 section only
+                score_threshold=request.score_threshold
+            )
+
+            if not results:
+                all_sections[standard] = None
+                continue
+
+            # Fetch full section data
+            section_id = str(results[0]['id'])
+            relevance_score = results[0]['score']
+
+            query = text("""
+                SELECT
+                    id::text,
+                    standard::text,
+                    section_number,
+                    section_title,
+                    page_start,
+                    page_end,
+                    content_cleaned as content,
+                    citation_key
+                FROM document_sections
+                WHERE id::text = :section_id
+            """)
+
+            row = db.execute(query, {"section_id": section_id}).fetchone()
+
+            if row:
+                year_map = {'PMBOK': '2021', 'PRINCE2': '2017', 'ISO_21502': '2020'}
+                std = row[1]
+                year = year_map.get(std, '2021')
+                page_ref = f"p. {row[4]}"
+                if row[5] and row[5] != row[4]:
+                    page_ref = f"pp. {row[4]}-{row[5]}"
+
+                citation = f"{std} ({year}), Section {row[2]}, {page_ref}"
+
+                all_sections[standard] = {
+                    "id": row[0],
+                    "standard": std,
+                    "section_number": row[2],
+                    "section_title": row[3],
+                    "page_start": row[4],
+                    "page_end": row[5],
+                    "content": row[6],
+                    "citation": citation,
+                    "relevance_score": relevance_score
+                }
+            else:
+                all_sections[standard] = None
+
+        logger.info(f"Section search completed for topic: '{request.topic}'")
+
+        return {
+            "topic": request.topic,
+            "sections": all_sections
+        }
+
+    except Exception as e:
+        logger.error(f"Section search failed for topic '{request.topic}': {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Section search failed. Please try again later."
+        )
+
+
+@router.post(
     "/compare-sections",
     response_model=SectionComparisonResponse,
     summary="Compare specific sections directly",

@@ -1,11 +1,18 @@
 import { useState } from "react";
-import { Search, Loader2, ArrowRight, Sparkles, Copy, Check } from "lucide-react";
+import { Search, Loader2, ArrowRight, Sparkles, Copy, Check, Grid3x3, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import type { SectionsByTopicResponse } from "@/types";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -25,7 +32,10 @@ interface ComparisonSources {
   ISO_21502: ComparisonSource[];
 }
 
+type ComparisonMode = "topic" | "section";
+
 export function ComparePageStreaming() {
+  const [comparisonMode, setComparisonMode] = useState<ComparisonMode>("topic");
   const [topic, setTopic] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +43,7 @@ export function ComparePageStreaming() {
   const [sources, setSources] = useState<ComparisonSources | null>(null);
   const [currentTopic, setCurrentTopic] = useState("");
   const [copiedCitation, setCopiedCitation] = useState<string | null>(null);
+  const [sectionData, setSectionData] = useState<SectionsByTopicResponse | null>(null);
 
   const handleCompare = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,9 +53,35 @@ export function ComparePageStreaming() {
     setError(null);
     setStreamedContent("");
     setSources(null);
+    setSectionData(null);
     setCurrentTopic(topic.trim());
 
     try {
+      if (comparisonMode === "section") {
+        // Section comparison mode - fetch top sections
+        const response = await fetch("http://localhost:8000/api/v1/sections-by-topic", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            topic: topic.trim(),
+            top_k_per_standard: 1,
+            score_threshold: 0.4
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data: SectionsByTopicResponse = await response.json();
+        setSectionData(data);
+        setIsLoading(false);
+        return;
+      }
+
+      // Topic comparison mode with streaming
       const response = await fetch("http://localhost:8000/api/v1/compare/stream", {
         method: "POST",
         headers: {
@@ -136,7 +173,7 @@ export function ComparePageStreaming() {
             <h1 className="text-4xl font-bold tracking-tight">Compare Standards</h1>
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Discover how PMBOK, PRINCE2, and ISO 21502 approach the same topics with AI-powered comparative analysis
+            Choose between AI-powered analysis or direct section comparison across PMBOK, PRINCE2, and ISO 21502
           </p>
         </div>
       )}
@@ -145,16 +182,22 @@ export function ComparePageStreaming() {
       {currentTopic && (
         <div className="space-y-2">
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
+            {comparisonMode === "topic" ? (
+              <Sparkles className="h-5 w-5 text-primary" />
+            ) : (
+              <Grid3x3 className="h-5 w-5 text-primary" />
+            )}
             Compare Standards
           </h1>
           <p className="text-sm text-muted-foreground">
-            AI-powered comparative analysis across all standards
+            {comparisonMode === "topic"
+              ? "AI-powered comparative analysis across all standards"
+              : "Side-by-side section comparison across all standards"}
           </p>
         </div>
       )}
 
-      {/* Comparison Input - Redesigned */}
+      {/* Comparison Input - Minimal Design */}
       <Card className="border-primary/20 shadow-sm">
         <CardContent className="pt-6">
           <form onSubmit={handleCompare} className="space-y-4">
@@ -162,11 +205,56 @@ export function ComparePageStreaming() {
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Enter a topic to compare (e.g., Risk Management, Stakeholder Engagement, Quality Assurance)"
+                placeholder={comparisonMode === "topic"
+                  ? "Enter a topic to compare (e.g., Risk Management, Stakeholder Engagement)"
+                  : "Enter a topic to find relevant sections (e.g., Risk Management, Quality Assurance)"}
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                className="h-14 pl-12 pr-4 text-base rounded-xl border-muted-foreground/20 focus:border-primary"
+                className="h-14 pl-12 pr-16 text-base rounded-xl border-muted-foreground/20 focus:border-primary"
               />
+
+              {/* Minimal Mode Selector */}
+              <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 w-9 p-0 rounded-lg border border-muted-foreground/20 bg-background hover:bg-muted hover:border-primary/40"
+                      type="button"
+                      title={comparisonMode === "topic" ? "AI Topic Comparison" : "Section Comparison"}
+                    >
+                      {comparisonMode === "topic" ? (
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      ) : (
+                        <Grid3x3 className="h-4 w-4 text-primary" />
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <DropdownMenuItem
+                      onClick={() => setComparisonMode("topic")}
+                      className="cursor-pointer py-3"
+                    >
+                      <Sparkles className="mr-3 h-5 w-5 text-primary" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">AI Topic Comparison</span>
+                        <span className="text-xs text-muted-foreground">Deep analysis with insights</span>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setComparisonMode("section")}
+                      className="cursor-pointer py-3"
+                    >
+                      <Grid3x3 className="mr-3 h-5 w-5 text-primary" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">Section Comparison</span>
+                        <span className="text-xs text-muted-foreground">View sections side-by-side</span>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
             <Button
               type="submit"
@@ -177,12 +265,12 @@ export function ComparePageStreaming() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Analyzing standards...
+                  {comparisonMode === "topic" ? "Analyzing standards..." : "Finding sections..."}
                 </>
               ) : (
                 <>
-                  <Sparkles className="mr-2 h-5 w-5" />
-                  Compare Across All Standards
+                  {comparisonMode === "topic" ? <Sparkles className="mr-2 h-5 w-5" /> : <Grid3x3 className="mr-2 h-5 w-5" />}
+                  {comparisonMode === "topic" ? "Compare Across All Standards" : "Find & Compare Sections"}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </>
               )}
@@ -192,24 +280,28 @@ export function ComparePageStreaming() {
       </Card>
 
       {/* Loading State - Modern Skeleton */}
-      {isLoading && !streamedContent && (
+      {isLoading && !streamedContent && !sectionData && (
         <div className="space-y-6">
-          {/* Analysis skeleton */}
-          <Card className="border-primary/20 animate-pulse">
-            <CardHeader>
-              <div className="h-7 w-56 bg-muted/50 rounded" />
-              <div className="h-4 w-72 bg-muted/30 rounded mt-2" />
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="h-4 w-full bg-muted/50 rounded" />
-              <div className="h-4 w-full bg-muted/50 rounded" />
-              <div className="h-4 w-5/6 bg-muted/50 rounded" />
-              <div className="h-4 w-full bg-muted/50 rounded" />
-              <div className="h-4 w-4/5 bg-muted/50 rounded" />
-            </CardContent>
-          </Card>
+          {comparisonMode === "topic" && (
+            <>
+              {/* Analysis skeleton */}
+              <Card className="border-primary/20 animate-pulse">
+                <CardHeader>
+                  <div className="h-7 w-56 bg-muted/50 rounded" />
+                  <div className="h-4 w-72 bg-muted/30 rounded mt-2" />
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="h-4 w-full bg-muted/50 rounded" />
+                  <div className="h-4 w-full bg-muted/50 rounded" />
+                  <div className="h-4 w-5/6 bg-muted/50 rounded" />
+                  <div className="h-4 w-full bg-muted/50 rounded" />
+                  <div className="h-4 w-4/5 bg-muted/50 rounded" />
+                </CardContent>
+              </Card>
+            </>
+          )}
 
-          {/* Sources skeleton */}
+          {/* Sources/Sections skeleton */}
           <div className="grid gap-6 md:grid-cols-3">
             {[1, 2, 3].map((i) => (
               <Card key={i} className="animate-pulse">
@@ -223,6 +315,13 @@ export function ComparePageStreaming() {
                     <div className="h-3 w-20 bg-muted/30 rounded" />
                     <div className="h-3 w-full bg-muted/30 rounded" />
                     <div className="h-3 w-full bg-muted/30 rounded" />
+                    {comparisonMode === "section" && (
+                      <>
+                        <div className="h-3 w-full bg-muted/30 rounded" />
+                        <div className="h-3 w-full bg-muted/30 rounded" />
+                        <div className="h-3 w-4/5 bg-muted/30 rounded" />
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -512,6 +611,256 @@ export function ComparePageStreaming() {
             </div>
           )}
         </>
+      )}
+
+      {/* Section Comparison Results */}
+      {sectionData && (
+        <div className="space-y-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold mb-2">Section Comparison</h2>
+            <p className="text-sm text-muted-foreground">
+              Most relevant sections for: <span className="font-semibold text-foreground">{sectionData.topic}</span>
+            </p>
+          </div>
+
+          <style>{`
+            .custom-scrollbar::-webkit-scrollbar {
+              width: 8px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-track {
+              background: hsl(var(--muted) / 0.3);
+              border-radius: 4px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+              background: hsl(var(--muted-foreground) / 0.3);
+              border-radius: 4px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+              background: hsl(var(--muted-foreground) / 0.5);
+            }
+          `}</style>
+
+          <div className="grid gap-6 lg:grid-cols-3 md:grid-cols-1">
+            {/* PMBOK Section */}
+            {sectionData.sections.PMBOK ? (
+              <Card className="hover:shadow-lg transition-shadow duration-300 border-blue-500/20 flex flex-col">
+                <CardHeader className="space-y-3 pb-4">
+                  <Badge
+                    variant="outline"
+                    className={`w-fit text-base px-3 py-1 ${getStandardBadgeColor("PMBOK")}`}
+                  >
+                    {getStandardDisplayName("PMBOK")}
+                  </Badge>
+                  <div>
+                    <CardTitle className="text-lg leading-tight">{sectionData.sections.PMBOK.section_title}</CardTitle>
+                    <p className="text-xs text-muted-foreground mt-1">§ {sectionData.sections.PMBOK.section_number}</p>
+                    <Badge variant="secondary" className="mt-2 text-xs">
+                      Relevance: {(sectionData.sections.PMBOK.relevance_score * 100).toFixed(0)}%
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <Separator />
+                <CardContent className="pt-4 flex-1 flex flex-col">
+                  <div className="flex-1 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
+                    <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          p: ({ children }) => (
+                            <p className="mb-3 leading-relaxed text-sm text-foreground/90">{children}</p>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="list-disc list-outside ml-4 space-y-1 mb-3 text-sm text-foreground/90">{children}</ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol className="list-decimal list-outside ml-4 space-y-1 mb-3 text-sm text-foreground/90">{children}</ol>
+                          ),
+                          li: ({ children }) => (
+                            <li className="text-foreground/90 leading-relaxed text-sm">{children}</li>
+                          ),
+                          strong: ({ children }) => (
+                            <strong className="font-semibold text-foreground">{children}</strong>
+                          ),
+                        }}
+                      >
+                        {sectionData.sections.PMBOK.content}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                  <div className="flex items-start justify-between gap-2 pt-4 mt-4 border-t">
+                    <p className="text-xs text-muted-foreground italic flex-1">
+                      {sectionData.sections.PMBOK.citation}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 shrink-0"
+                      onClick={() => copyToClipboard(sectionData.sections.PMBOK!.citation, 'pmbok-section')}
+                    >
+                      {copiedCitation === 'pmbok-section' ? (
+                        <Check className="h-3 w-3 text-green-500" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-blue-500/20 opacity-50">
+                <CardContent className="pt-6 text-center">
+                  <p className="text-sm text-muted-foreground">No PMBOK section found</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* PRINCE2 Section */}
+            {sectionData.sections.PRINCE2 ? (
+              <Card className="hover:shadow-lg transition-shadow duration-300 border-purple-500/20 flex flex-col">
+                <CardHeader className="space-y-3 pb-4">
+                  <Badge
+                    variant="outline"
+                    className={`w-fit text-base px-3 py-1 ${getStandardBadgeColor("PRINCE2")}`}
+                  >
+                    {getStandardDisplayName("PRINCE2")}
+                  </Badge>
+                  <div>
+                    <CardTitle className="text-lg leading-tight">{sectionData.sections.PRINCE2.section_title}</CardTitle>
+                    <p className="text-xs text-muted-foreground mt-1">§ {sectionData.sections.PRINCE2.section_number}</p>
+                    <Badge variant="secondary" className="mt-2 text-xs">
+                      Relevance: {(sectionData.sections.PRINCE2.relevance_score * 100).toFixed(0)}%
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <Separator />
+                <CardContent className="pt-4 flex-1 flex flex-col">
+                  <div className="flex-1 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
+                    <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          p: ({ children }) => (
+                            <p className="mb-3 leading-relaxed text-sm text-foreground/90">{children}</p>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="list-disc list-outside ml-4 space-y-1 mb-3 text-sm text-foreground/90">{children}</ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol className="list-decimal list-outside ml-4 space-y-1 mb-3 text-sm text-foreground/90">{children}</ol>
+                          ),
+                          li: ({ children }) => (
+                            <li className="text-foreground/90 leading-relaxed text-sm">{children}</li>
+                          ),
+                          strong: ({ children }) => (
+                            <strong className="font-semibold text-foreground">{children}</strong>
+                          ),
+                        }}
+                      >
+                        {sectionData.sections.PRINCE2.content}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                  <div className="flex items-start justify-between gap-2 pt-4 mt-4 border-t">
+                    <p className="text-xs text-muted-foreground italic flex-1">
+                      {sectionData.sections.PRINCE2.citation}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 shrink-0"
+                      onClick={() => copyToClipboard(sectionData.sections.PRINCE2!.citation, 'prince2-section')}
+                    >
+                      {copiedCitation === 'prince2-section' ? (
+                        <Check className="h-3 w-3 text-green-500" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-purple-500/20 opacity-50">
+                <CardContent className="pt-6 text-center">
+                  <p className="text-sm text-muted-foreground">No PRINCE2 section found</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* ISO 21502 Section */}
+            {sectionData.sections.ISO_21502 ? (
+              <Card className="hover:shadow-lg transition-shadow duration-300 border-teal-500/20 flex flex-col">
+                <CardHeader className="space-y-3 pb-4">
+                  <Badge
+                    variant="outline"
+                    className={`w-fit text-base px-3 py-1 ${getStandardBadgeColor("ISO_21502")}`}
+                  >
+                    {getStandardDisplayName("ISO_21502")}
+                  </Badge>
+                  <div>
+                    <CardTitle className="text-lg leading-tight">{sectionData.sections.ISO_21502.section_title}</CardTitle>
+                    <p className="text-xs text-muted-foreground mt-1">§ {sectionData.sections.ISO_21502.section_number}</p>
+                    <Badge variant="secondary" className="mt-2 text-xs">
+                      Relevance: {(sectionData.sections.ISO_21502.relevance_score * 100).toFixed(0)}%
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <Separator />
+                <CardContent className="pt-4 flex-1 flex flex-col">
+                  <div className="flex-1 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
+                    <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          p: ({ children }) => (
+                            <p className="mb-3 leading-relaxed text-sm text-foreground/90">{children}</p>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="list-disc list-outside ml-4 space-y-1 mb-3 text-sm text-foreground/90">{children}</ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol className="list-decimal list-outside ml-4 space-y-1 mb-3 text-sm text-foreground/90">{children}</ol>
+                          ),
+                          li: ({ children }) => (
+                            <li className="text-foreground/90 leading-relaxed text-sm">{children}</li>
+                          ),
+                          strong: ({ children }) => (
+                            <strong className="font-semibold text-foreground">{children}</strong>
+                          ),
+                        }}
+                      >
+                        {sectionData.sections.ISO_21502.content}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                  <div className="flex items-start justify-between gap-2 pt-4 mt-4 border-t">
+                    <p className="text-xs text-muted-foreground italic flex-1">
+                      {sectionData.sections.ISO_21502.citation}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 shrink-0"
+                      onClick={() => copyToClipboard(sectionData.sections.ISO_21502!.citation, 'iso-section')}
+                    >
+                      {copiedCitation === 'iso-section' ? (
+                        <Check className="h-3 w-3 text-green-500" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-teal-500/20 opacity-50">
+                <CardContent className="pt-6 text-center">
+                  <p className="text-sm text-muted-foreground">No ISO 21502 section found</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
       )}
 
     </div>

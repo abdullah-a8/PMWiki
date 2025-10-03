@@ -123,3 +123,25 @@ export interface HealthCheckResponse {
   status: string
   message: string
 }
+
+// Section Comparison Types
+export interface SectionComparisonItem {
+  id: string
+  standard: string
+  section_number: string
+  section_title: string
+  page_start: number
+  page_end?: number
+  content: string
+  citation: string
+  relevance_score: number
+}
+
+export interface SectionsByTopicResponse {
+  topic: string
+  sections: {
+    PMBOK: SectionComparisonItem | null
+    PRINCE2: SectionComparisonItem | null
+    ISO_21502: SectionComparisonItem | null
+  }
+}

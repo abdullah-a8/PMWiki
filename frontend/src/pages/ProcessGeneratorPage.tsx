@@ -19,6 +19,7 @@ import {
   Copy,
   Check,
   Workflow,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -63,6 +65,18 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
+
+// Help icon component with tooltip
+const HelpIcon = ({ content }: { content: string }) => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <HelpCircle className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help" />
+    </TooltipTrigger>
+    <TooltipContent side="top" className="max-w-xs">
+      <p className="text-xs">{content}</p>
+    </TooltipContent>
+  </Tooltip>
+);
 
 // Project type options with icons
 const projectTypes = [
@@ -252,10 +266,13 @@ export function ProcessGeneratorPage() {
 
                 {/* Project Description */}
                 <div className="space-y-2">
-                  <Label htmlFor="project_description">Project Description *</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="project_description">Project Description *</Label>
+                    <HelpIcon content="Describe your project, its goals, and key characteristics. Include details about scope, objectives, and any specific requirements or constraints." />
+                  </div>
                   <Textarea
                     id="project_description"
-                    placeholder="Describe your project, its goals, and key characteristics (e.g., 'Developing a mobile app for real-time project tracking with integration to existing enterprise systems')"
+                    placeholder="e.g., 'Developing a mobile app for real-time project tracking with integration to existing enterprise systems'"
                     className="min-h-[120px] resize-none"
                     {...register("project_description")}
                   />
@@ -269,7 +286,10 @@ export function ProcessGeneratorPage() {
 
                 {/* Project Size */}
                 <div className="space-y-2">
-                  <Label htmlFor="project_size">Project Size *</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="project_size">Project Size *</Label>
+                    <HelpIcon content="Select the project size based on duration and team size. This helps determine the appropriate level of process complexity and governance." />
+                  </div>
                   <Select
                     value={projectSize}
                     onValueChange={(value) => setValue("project_size", value as any)}
@@ -313,16 +333,17 @@ export function ProcessGeneratorPage() {
 
                 {/* Optional Fields */}
                 <div className="space-y-6">
-                  <div>
-                    <h3 className="text-sm font-semibold mb-4">Additional Details (Optional)</h3>
-                    <p className="text-xs text-muted-foreground mb-4">
-                      Provide comma-separated values for better tailoring
-                    </p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold">Additional Details (Optional)</h3>
+                    <HelpIcon content="Provide additional context to help tailor the process. Use comma-separated values for multiple items in each field." />
                   </div>
 
                   {/* Constraints */}
                   <div className="space-y-2">
-                    <Label htmlFor="constraints">Key Constraints</Label>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="constraints">Key Constraints</Label>
+                      <HelpIcon content="List any limitations or restrictions that may affect the project approach, such as budget, time, resources, or regulatory requirements." />
+                    </div>
                     <Input
                       id="constraints"
                       placeholder="e.g., tight budget, fixed deadline, regulatory compliance"
@@ -335,7 +356,10 @@ export function ProcessGeneratorPage() {
 
                   {/* Priorities */}
                   <div className="space-y-2">
-                    <Label htmlFor="priorities">Key Priorities</Label>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="priorities">Key Priorities</Label>
+                      <HelpIcon content="Specify what matters most for this project's success, such as quality, speed, cost control, or stakeholder satisfaction." />
+                    </div>
                     <Input
                       id="priorities"
                       placeholder="e.g., quality, speed, stakeholder satisfaction"
@@ -348,7 +372,10 @@ export function ProcessGeneratorPage() {
 
                   {/* Focus Areas */}
                   <div className="space-y-2">
-                    <Label htmlFor="focus_areas">Focus Areas</Label>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="focus_areas">Focus Areas</Label>
+                      <HelpIcon content="Identify specific project management areas that need special attention or emphasis in your process." />
+                    </div>
                     <Input
                       id="focus_areas"
                       placeholder="e.g., risk management, change control, quality assurance"

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Loader2, ArrowRight, Sparkles, Copy, Check, Grid3x3 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 interface ComparisonSource {
+  id: string;
   section_number: string;
   section_title: string;
   page_start: number;
@@ -35,6 +37,7 @@ interface ComparisonSources {
 type ComparisonMode = "topic" | "section";
 
 export function ComparePageStreaming() {
+  const navigate = useNavigate();
   const [comparisonMode, setComparisonMode] = useState<ComparisonMode>("topic");
   const [topic, setTopic] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -454,7 +457,7 @@ export function ComparePageStreaming() {
               <div className="grid gap-6 md:grid-cols-3">
                 {/* PMBOK Sources */}
                 {sources.PMBOK.length > 0 && (
-                  <Card className="hover:shadow-lg transition-shadow duration-300 border-blue-500/20">
+                  <Card className="hover:shadow-lg transition-shadow duration-300 border-blue-500/20 cursor-pointer">
                     <CardHeader className="space-y-3 pb-4">
                       <Badge
                         variant="outline"
@@ -474,7 +477,11 @@ export function ComparePageStreaming() {
                     <Separator />
                     <CardContent className="pt-4 space-y-4">
                       {sources.PMBOK.map((source, idx) => (
-                        <div key={idx} className="space-y-2.5">
+                        <div
+                          key={idx}
+                          className="space-y-2.5 hover:bg-muted/50 p-3 -mx-3 rounded-lg transition-colors cursor-pointer"
+                          onClick={() => navigate(`/sections/${source.id}`)}
+                        >
                           <div>
                             <p className="font-semibold text-sm leading-tight">{source.section_title}</p>
                             <p className="text-xs text-muted-foreground mt-1">§ {source.section_number}</p>
@@ -488,7 +495,10 @@ export function ComparePageStreaming() {
                               variant="ghost"
                               size="sm"
                               className="h-7 w-7 p-0 shrink-0"
-                              onClick={() => copyToClipboard(source.citation, `pmbok-${idx}`)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyToClipboard(source.citation, `pmbok-${idx}`);
+                              }}
                             >
                               {copiedCitation === `pmbok-${idx}` ? (
                                 <Check className="h-3 w-3 text-green-500" />
@@ -506,7 +516,7 @@ export function ComparePageStreaming() {
 
                 {/* PRINCE2 Sources */}
                 {sources.PRINCE2.length > 0 && (
-                  <Card className="hover:shadow-lg transition-shadow duration-300 border-purple-500/20">
+                  <Card className="hover:shadow-lg transition-shadow duration-300 border-purple-500/20 cursor-pointer">
                     <CardHeader className="space-y-3 pb-4">
                       <Badge
                         variant="outline"
@@ -526,7 +536,11 @@ export function ComparePageStreaming() {
                     <Separator />
                     <CardContent className="pt-4 space-y-4">
                       {sources.PRINCE2.map((source, idx) => (
-                        <div key={idx} className="space-y-2.5">
+                        <div
+                          key={idx}
+                          className="space-y-2.5 hover:bg-muted/50 p-3 -mx-3 rounded-lg transition-colors cursor-pointer"
+                          onClick={() => navigate(`/sections/${source.id}`)}
+                        >
                           <div>
                             <p className="font-semibold text-sm leading-tight">{source.section_title}</p>
                             <p className="text-xs text-muted-foreground mt-1">§ {source.section_number}</p>
@@ -540,7 +554,10 @@ export function ComparePageStreaming() {
                               variant="ghost"
                               size="sm"
                               className="h-7 w-7 p-0 shrink-0"
-                              onClick={() => copyToClipboard(source.citation, `prince2-${idx}`)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyToClipboard(source.citation, `prince2-${idx}`);
+                              }}
                             >
                               {copiedCitation === `prince2-${idx}` ? (
                                 <Check className="h-3 w-3 text-green-500" />
@@ -558,7 +575,7 @@ export function ComparePageStreaming() {
 
                 {/* ISO 21502 Sources */}
                 {sources.ISO_21502.length > 0 && (
-                  <Card className="hover:shadow-lg transition-shadow duration-300 border-teal-500/20">
+                  <Card className="hover:shadow-lg transition-shadow duration-300 border-teal-500/20 cursor-pointer">
                     <CardHeader className="space-y-3 pb-4">
                       <Badge
                         variant="outline"
@@ -578,7 +595,11 @@ export function ComparePageStreaming() {
                     <Separator />
                     <CardContent className="pt-4 space-y-4">
                       {sources.ISO_21502.map((source, idx) => (
-                        <div key={idx} className="space-y-2.5">
+                        <div
+                          key={idx}
+                          className="space-y-2.5 hover:bg-muted/50 p-3 -mx-3 rounded-lg transition-colors cursor-pointer"
+                          onClick={() => navigate(`/sections/${source.id}`)}
+                        >
                           <div>
                             <p className="font-semibold text-sm leading-tight">{source.section_title}</p>
                             <p className="text-xs text-muted-foreground mt-1">§ {source.section_number}</p>
@@ -592,7 +613,10 @@ export function ComparePageStreaming() {
                               variant="ghost"
                               size="sm"
                               className="h-7 w-7 p-0 shrink-0"
-                              onClick={() => copyToClipboard(source.citation, `iso-${idx}`)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyToClipboard(source.citation, `iso-${idx}`);
+                              }}
                             >
                               {copiedCitation === `iso-${idx}` ? (
                                 <Check className="h-3 w-3 text-green-500" />
@@ -643,7 +667,10 @@ export function ComparePageStreaming() {
           <div className="grid gap-6 lg:grid-cols-3 md:grid-cols-1">
             {/* PMBOK Section */}
             {sectionData.sections.PMBOK ? (
-              <Card className="hover:shadow-lg transition-shadow duration-300 border-blue-500/20 flex flex-col">
+              <Card
+                className="hover:shadow-lg transition-shadow duration-300 border-blue-500/20 flex flex-col cursor-pointer"
+                onClick={() => navigate(`/sections/${sectionData.sections.PMBOK!.id}`)}
+              >
                 <CardHeader className="space-y-3 pb-4">
                   <Badge
                     variant="outline"
@@ -660,7 +687,7 @@ export function ComparePageStreaming() {
                   </div>
                 </CardHeader>
                 <Separator />
-                <CardContent className="pt-4 flex-1 flex flex-col">
+                <CardContent className="pt-4 flex-1 flex flex-col" onClick={(e) => e.stopPropagation()}>
                   <div className="flex-1 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
                     <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
                       <ReactMarkdown
@@ -716,7 +743,10 @@ export function ComparePageStreaming() {
 
             {/* PRINCE2 Section */}
             {sectionData.sections.PRINCE2 ? (
-              <Card className="hover:shadow-lg transition-shadow duration-300 border-purple-500/20 flex flex-col">
+              <Card
+                className="hover:shadow-lg transition-shadow duration-300 border-purple-500/20 flex flex-col cursor-pointer"
+                onClick={() => navigate(`/sections/${sectionData.sections.PRINCE2!.id}`)}
+              >
                 <CardHeader className="space-y-3 pb-4">
                   <Badge
                     variant="outline"
@@ -733,7 +763,7 @@ export function ComparePageStreaming() {
                   </div>
                 </CardHeader>
                 <Separator />
-                <CardContent className="pt-4 flex-1 flex flex-col">
+                <CardContent className="pt-4 flex-1 flex flex-col" onClick={(e) => e.stopPropagation()}>
                   <div className="flex-1 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
                     <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
                       <ReactMarkdown
@@ -789,7 +819,10 @@ export function ComparePageStreaming() {
 
             {/* ISO 21502 Section */}
             {sectionData.sections.ISO_21502 ? (
-              <Card className="hover:shadow-lg transition-shadow duration-300 border-teal-500/20 flex flex-col">
+              <Card
+                className="hover:shadow-lg transition-shadow duration-300 border-teal-500/20 flex flex-col cursor-pointer"
+                onClick={() => navigate(`/sections/${sectionData.sections.ISO_21502!.id}`)}
+              >
                 <CardHeader className="space-y-3 pb-4">
                   <Badge
                     variant="outline"
@@ -806,7 +839,7 @@ export function ComparePageStreaming() {
                   </div>
                 </CardHeader>
                 <Separator />
-                <CardContent className="pt-4 flex-1 flex flex-col">
+                <CardContent className="pt-4 flex-1 flex flex-col" onClick={(e) => e.stopPropagation()}>
                   <div className="flex-1 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
                     <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
                       <ReactMarkdown

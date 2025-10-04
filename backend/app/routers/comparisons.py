@@ -191,6 +191,7 @@ async def compare_topic_stream(
                     content_preview = chunk['content'][:200] + '...' if len(chunk['content']) > 200 else chunk['content']
 
                     sources[standard].append({
+                        'id': chunk['id'],
                         'section_number': chunk['section_number'],
                         'section_title': chunk['section_title'],
                         'page_start': chunk['page_start'],

@@ -42,6 +42,7 @@ class ComparisonRequest(BaseModel):
 
 class SourceSummary(BaseModel):
     """Lightweight source reference for comparison"""
+    id: str = Field(..., description="Section UUID")
     section_number: str = Field(..., description="Section identifier")
     section_title: str = Field(..., description="Section title")
     page_start: int = Field(..., description="Starting page number")

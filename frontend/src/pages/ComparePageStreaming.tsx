@@ -13,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { API_BASE_URL } from "@/lib/constants";
 import type { SectionsByTopicResponse } from "@/types";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -62,7 +63,7 @@ export function ComparePageStreaming() {
     try {
       if (comparisonMode === "section") {
         // Section comparison mode - fetch top sections
-        const response = await fetch("http://localhost:8000/api/v1/sections-by-topic", {
+        const response = await fetch(`${API_BASE_URL}/v1/sections-by-topic`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -85,7 +86,7 @@ export function ComparePageStreaming() {
       }
 
       // Topic comparison mode with streaming
-      const response = await fetch("http://localhost:8000/api/v1/compare/stream", {
+      const response = await fetch(`${API_BASE_URL}/v1/compare/stream`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

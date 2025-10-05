@@ -40,6 +40,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { API_BASE_URL } from "@/lib/constants";
 
 // Form validation schema
 const formSchema = z.object({
@@ -174,7 +175,7 @@ export function ProcessGeneratorPage() {
           : undefined,
       };
 
-      const response = await fetch("http://localhost:8000/api/v1/generate-process", {
+      const response = await fetch(`${API_BASE_URL}/v1/generate-process`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

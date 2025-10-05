@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { searchHistoryStorage } from "@/lib/searchHistory";
+import { API_BASE_URL } from "@/lib/constants";
 
 interface SourceReference {
   id: string;
@@ -107,7 +108,7 @@ export function HomePage() {
     setAdditionalContext([]);
 
     try {
-      const response = await fetch("http://localhost:8000/api/v1/search/stream", {
+      const response = await fetch(`${API_BASE_URL}/v1/search/stream`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

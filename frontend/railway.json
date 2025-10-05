@@ -4,6 +4,6 @@
     "builder": "RAILPACK"
   },
   "deploy": {
-    "startCommand": "npx serve dist -s -n -l $PORT"
+    "startCommand": "npm install -g serve && serve dist -s -n -l $PORT"
   }
 }

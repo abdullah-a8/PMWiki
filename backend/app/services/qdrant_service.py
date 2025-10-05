@@ -28,21 +28,33 @@ load_dotenv()
 class QdrantService:
     """Service for managing Qdrant vector database operations"""
 
-    def __init__(self, host: str = "localhost", port: int = 6333):
+    def __init__(self, host: str = None, port: int = None):
         """
         Initialize Qdrant client
 
         Args:
-            host: Qdrant server host
-            port: Qdrant server port
+            host: Qdrant server host (optional, defaults to env or localhost)
+            port: Qdrant server port (optional, defaults to env or 6333)
         """
-        self.host = host
-        self.port = port
-        self.client = QdrantClient(host=host, port=port)
-        self.collection_name = "pmwiki_sections"
-        self.embedding_dimension = 1024  # voyage-3-large dimension
+        # Support both local and cloud deployment
+        qdrant_api_key = os.getenv("QDRANT_API_KEY")
+        qdrant_host = host or os.getenv("QDRANT_HOST", "localhost")
 
-        logger.info(f"QdrantService initialized: {host}:{port}")
+        if qdrant_api_key:
+            # Cloud deployment
+            self.client = QdrantClient(
+                url=qdrant_host,
+                api_key=qdrant_api_key,
+            )
+            logger.info(f"QdrantService initialized (Cloud): {qdrant_host}")
+        else:
+            # Local deployment
+            qdrant_port = port or int(os.getenv("QDRANT_PORT", "6333"))
+            self.client = QdrantClient(host=qdrant_host, port=qdrant_port)
+            logger.info(f"QdrantService initialized (Local): {qdrant_host}:{qdrant_port}")
+
+        self.collection_name = os.getenv("QDRANT_COLLECTION_NAME", "pmwiki_sections")
+        self.embedding_dimension = 1024  # voyage-3-large dimension
 
     def create_collection(self, recreate: bool = False) -> bool:
         """

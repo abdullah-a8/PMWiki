@@ -108,25 +108,28 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
   };
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex h-full flex-col bg-transparent">
       {/* Header with Logo and Toggle */}
-      <div className="flex h-16 shrink-0 items-center gap-3 border-b px-4">
+      <div className={cn(
+        "flex h-16 shrink-0 items-center px-4 mb-1",
+        isCollapsed ? "justify-center" : "justify-between"
+      )}>
+        {!isCollapsed && (
+          <span className="text-lg font-semibold">PMWiki</span>
+        )}
         <Button
           variant="ghost"
           size="icon"
           onClick={onToggle}
-          className="-ml-1"
+          className="shrink-0 h-9 w-9"
         >
           <Menu className="h-5 w-5" />
           <span className="sr-only">Toggle sidebar</span>
         </Button>
-        {!isCollapsed && (
-          <span className="text-lg font-semibold">PMWiki</span>
-        )}
       </div>
 
       {/* Main Navigation */}
-      <div className="p-4">
+      <div className="px-3">
         <nav className="space-y-1">
           <TooltipProvider delayDuration={0}>
             {menuItems.map((item) => {
@@ -136,24 +139,19 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
                   key={item.title}
                   to={item.url}
                   className={cn(
-                    "flex items-center rounded-lg py-2 text-sm transition-all duration-300",
-                    isCollapsed ? "justify-center px-2" : "gap-3 px-4",
+                    "flex items-center rounded-lg py-2.5 text-sm transition-all duration-300",
+                    isCollapsed ? "justify-center px-0 w-10 mx-auto" : "gap-3 px-3",
                     isActive
                       ? "bg-secondary text-secondary-foreground"
                       : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                   )}
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
-                  <span
-                    className={cn(
-                      "transition-all duration-300 whitespace-nowrap",
-                      isCollapsed
-                        ? "opacity-0 w-0 overflow-hidden"
-                        : "opacity-100 w-auto"
-                    )}
-                  >
-                    {item.title}
-                  </span>
+                  {!isCollapsed && (
+                    <span className="truncate">
+                      {item.title}
+                    </span>
+                  )}
                 </Link>
               );
 
@@ -178,8 +176,8 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
 
       {/* Recent Searches Section */}
       {!isCollapsed && searchHistory.length > 0 && (
-        <div className="flex-1 overflow-hidden flex flex-col border-t mt-4">
-          <div className="p-4 pb-2 flex items-center justify-between">
+        <div className="flex-1 overflow-hidden flex flex-col mt-4 min-h-0">
+          <div className="px-4 pb-2 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <Clock className="h-4 w-4" />
               <span>Recent Searches</span>
@@ -187,14 +185,14 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 text-xs text-muted-foreground hover:text-foreground"
+              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
               onClick={handleClearHistory}
             >
               Clear
             </Button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 pb-4">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 pb-3 min-h-0">
             <div className="space-y-1">
               {searchHistory.map((item) => {
                 const currentQuery = new URLSearchParams(location.search).get("q");
@@ -204,22 +202,22 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
                   <div
                     key={item.id}
                     className={cn(
-                      "group relative rounded-lg transition-colors cursor-pointer",
+                      "group relative rounded-lg transition-colors cursor-pointer min-w-0",
                       isActive
                         ? "bg-secondary text-secondary-foreground"
                         : "hover:bg-secondary/50"
                     )}
                     onClick={() => handleHistoryClick(item.query)}
                   >
-                    <div className="p-2 pr-8">
-                      <p className="text-sm line-clamp-2 text-foreground">
+                    <div className="p-2 pr-8 min-w-0">
+                      <p className="text-sm line-clamp-2 text-foreground break-words">
                         {item.query}
                       </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
                           {formatTimestamp(item.timestamp)}
                         </span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
                           • {item.primarySourcesCount} results
                         </span>
                       </div>
@@ -242,7 +240,7 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
 
       {/* Collapsed state - just show icon */}
       {isCollapsed && searchHistory.length > 0 && (
-        <div className="border-t mt-4 p-4">
+        <div className="mt-4 py-3">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -259,14 +257,14 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
       )}
 
       {/* Backend Connection Status */}
-      <div className="mt-auto border-t p-4">
+      <div className="mt-auto px-4 py-4 border-t border-border/30 shrink-0">
         <TooltipProvider delayDuration={0}>
           {isCollapsed ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex items-center justify-center">
                   <div
-                    className={`h-2 w-2 rounded-full ${
+                    className={`h-2.5 w-2.5 rounded-full ${
                       isLoading
                         ? "bg-yellow-500 animate-pulse"
                         : health?.status === "healthy"
@@ -281,9 +279,9 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
               </TooltipContent>
             </Tooltip>
           ) : (
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-2 text-sm min-w-0">
               <div
-                className={`h-2 w-2 rounded-full ${
+                className={`h-2.5 w-2.5 rounded-full shrink-0 ${
                   isLoading
                     ? "bg-yellow-500 animate-pulse"
                     : health?.status === "healthy"
@@ -291,7 +289,7 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
                     : "bg-red-500"
                 }`}
               />
-              <span className="text-muted-foreground">
+              <span className="text-muted-foreground truncate">
                 {isLoading ? "Connecting" : health?.status === "healthy" ? "Connected" : "Offline"}
               </span>
             </div>

@@ -18,16 +18,23 @@ export function RootLayout() {
 
       {/* Content */}
       <div className="flex h-screen relative z-10">
-        {/* Sidebar */}
-        <aside
-          className={`${
-            sidebarOpen ? "w-64" : "w-16"
-          } flex-shrink-0 border-r transition-all duration-300 ease-in-out`}
+        {/* Sidebar Container - maintains space */}
+        <div
+          className={`flex-shrink-0 transition-all duration-500 ease-in-out ${
+            sidebarOpen ? "w-64" : "w-20"
+          }`}
         >
-          <div className="h-full">
-            <AppSidebar isCollapsed={!sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
-          </div>
-        </aside>
+          {/* Floating Sidebar */}
+          <aside
+            className={`fixed left-4 top-4 bottom-4 bg-background/95 backdrop-blur-md rounded-2xl shadow-2xl border border-border/50 transition-all duration-500 ease-in-out overflow-hidden ${
+              sidebarOpen ? "w-60" : "w-16"
+            }`}
+          >
+            <div className="h-full overflow-y-auto overflow-x-hidden">
+              <AppSidebar isCollapsed={!sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+            </div>
+          </aside>
+        </div>
 
         {/* Main content */}
         <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">

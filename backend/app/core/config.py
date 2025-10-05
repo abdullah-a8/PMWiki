@@ -1,5 +1,7 @@
 from pydantic_settings import BaseSettings
 from typing import List
+import json
+import os
 
 
 class Settings(BaseSettings):
@@ -24,7 +26,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str
     VOYAGE_API_KEY: str
 
-    # CORS
+    # CORS - will be parsed from JSON string in env variable
     ALLOWED_HOSTS: List[str] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:8000"]
 
     # Rate Limiting
@@ -34,6 +36,17 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"  # Corrected path for env file
         case_sensitive = True
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Parse ALLOWED_HOSTS from JSON string if provided as string
+        allowed_hosts_env = os.getenv("ALLOWED_HOSTS")
+        if allowed_hosts_env and isinstance(allowed_hosts_env, str):
+            try:
+                self.ALLOWED_HOSTS = json.loads(allowed_hosts_env)
+            except json.JSONDecodeError:
+                # If not valid JSON, try comma-separated values
+                self.ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(",")]
 
 
 settings = Settings()

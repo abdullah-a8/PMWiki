@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Copy, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Copy, Check, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { api } from "@/lib/api";
-import type { Section } from "@/types";
+import type { Section, StandardInfo } from "@/types";
 
 export function SectionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +25,23 @@ export function SectionDetailPage() {
     },
     enabled: !!id,
   });
+
+  // Fetch all sections from the same standard for navigation
+  const { data: standardSections } = useQuery<StandardInfo>({
+    queryKey: ["standard-sections", section?.standard],
+    queryFn: async () => {
+      const response = await api.get(`/v1/standards/${section?.standard}/sections`);
+      return response.data;
+    },
+    enabled: !!section?.standard,
+  });
+
+  // Find current section index and get prev/next
+  const currentIndex = standardSections?.sections.findIndex((s) => s.id === id) ?? -1;
+  const previousSection = currentIndex > 0 ? standardSections?.sections[currentIndex - 1] : null;
+  const nextSection = currentIndex >= 0 && currentIndex < (standardSections?.sections.length ?? 0) - 1
+    ? standardSections?.sections[currentIndex + 1]
+    : null;
 
   const getStandardDisplayName = (std: string) => {
     return std === "ISO_21502" ? "ISO 21502" : std;
@@ -213,6 +230,43 @@ export function SectionDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Navigation Buttons */}
+      <div className="flex items-center justify-between gap-4">
+        <Button
+          variant="outline"
+          onClick={() => previousSection && navigate(`/section/${previousSection.id}`)}
+          disabled={!previousSection}
+          className="flex-1 justify-start"
+        >
+          <ChevronLeft className="h-4 w-4 mr-2" />
+          <div className="flex flex-col items-start overflow-hidden">
+            <span className="text-xs text-muted-foreground">Previous</span>
+            {previousSection && (
+              <span className="text-sm truncate w-full">
+                {previousSection.section_number}: {previousSection.section_title}
+              </span>
+            )}
+          </div>
+        </Button>
+
+        <Button
+          variant="outline"
+          onClick={() => nextSection && navigate(`/section/${nextSection.id}`)}
+          disabled={!nextSection}
+          className="flex-1 justify-end"
+        >
+          <div className="flex flex-col items-end overflow-hidden">
+            <span className="text-xs text-muted-foreground">Next</span>
+            {nextSection && (
+              <span className="text-sm truncate w-full">
+                {nextSection.section_number}: {nextSection.section_title}
+              </span>
+            )}
+          </div>
+          <ChevronRight className="h-4 w-4 ml-2" />
+        </Button>
+      </div>
     </div>
   );
 }

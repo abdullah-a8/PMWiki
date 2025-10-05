@@ -4,6 +4,6 @@
     "builder": "RAILPACK"
   },
   "deploy": {
-    "startCommand": "npm install -g serve && serve dist -s -n -l $PORT"
+    "startCommand": "npm install -g serve && serve dist -s -n --listen tcp://0.0.0.0:$PORT"
   }
 }

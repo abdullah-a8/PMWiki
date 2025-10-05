@@ -29,6 +29,77 @@
 
 PMWiki is a production-ready citation-focused Retrieval-Augmented Generation (RAG) system that enables project managers, students, and researchers to explore, compare, and leverage three major project management standards: PMBOK 7th Edition, PRINCE2, and ISO 21502:2020. The system provides semantic search, side-by-side comparisons, and tailored process generation capabilities backed by academic-grade citations.
 
+### Features
+
+**Semantic Search & RAG**
+- Natural language queries across all three standards simultaneously
+- Citation-enhanced embeddings for improved context awareness
+- Streaming responses with real-time LLM answer generation
+- Search history with full response caching for instant replay
+- Top sections per standard with relevance scoring
+
+**Standards Comparison**
+- AI-powered topic comparison with structured analysis (Similarities, Differences, Unique Points)
+- Direct section-to-section comparison mode
+- Vector similarity search for discovering related content
+- Side-by-side source references with color-coded badges
+- One-click citation copying in APA and IEEE formats
+
+**Process Generation**
+- Scenario-driven tailored process recommendations
+- Comprehensive form with 9 project types and customizable parameters
+- Evidence-based outputs with phases, activities, and deliverables
+- Detailed justifications linked to specific standard sections
+- Standards alignment showing contribution from each framework
+
+**Standards Library**
+- Complete repository of 359 sections with full text and metadata
+- Hierarchical table of contents navigation
+- Deep-linking to any section via UUID
+- Academic citations (APA & IEEE) for every section
+- Page-level precision for accurate referencing
+
+**Technical Excellence**
+- FastAPI backend with async/await for high performance
+- React + TypeScript frontend with shadcn/ui components
+- Real-time streaming via Server-Sent Events (SSE)
+- Dual vector storage (PostgreSQL pgvector + Qdrant Cloud)
+- Production deployment on Railway with automatic CI/CD
+
+### UI/UX Experience
+
+**Clean, Intuitive Interface**
+- Google-style centered search on homepage with keyboard shortcut (⌘K / Ctrl+K)
+- Collapsible sidebar navigation with active route highlighting
+- Dark theme with carefully chosen color palette for visual comfort
+- Responsive design adapting seamlessly to mobile, tablet, and desktop
+
+**Progressive Disclosure**
+- Three-section result layout: Most Relevant → Analysis → Additional Reading
+- Collapsible sections to reduce information overload
+- Accordion-style phases in process generation for focused exploration
+- Fixed bottom search bar on results pages for easy follow-up queries
+
+**Visual Consistency**
+- Color-coded standard badges (Blue: PMBOK, Purple: PRINCE2, Teal: ISO 21502)
+- Consistent card layouts across all feature pages
+- Relevance score badges for transparency
+- Loading skeletons and smooth transitions for perceived performance
+
+**Accessibility & Usability**
+- Full keyboard navigation support throughout the application
+- Descriptive ARIA labels for screen readers
+- Sufficient color contrast (WCAG AA compliance)
+- Clear visual feedback for all user actions (hover states, click effects)
+- Markdown rendering with syntax highlighting for code snippets
+
+**User-Centric Design**
+- Non-intrusive copy-to-clipboard with icon-to-checkmark animation
+- Streaming text provides real-time feedback during LLM generation
+- Search history in sidebar for quick access to previous queries
+- Toast notifications for errors without blocking the interface
+- Direct navigation between related features (search → section detail → similar sections)
+
 ### Key Metrics
 
 - **Total Content**: 359 sections across 3 standards (PMBOK: 153, PRINCE2: 62, ISO 21502: 144)
@@ -79,8 +150,8 @@ Design and implement a web application that helps project managers, students, an
 
 ### Deliverables
 
-- **Application Prototype**: Responsive web application with mobile support
-- **Standards Repository**: Searchable navigation of all 337 sections
+- **Application Prototype**: Responsive web application
+- **Standards Repository**: Searchable navigation of all 359 sections
 - **Comparison View**: Side-by-side analysis with deep linking
 - **Insights Dashboard**: Structured summaries of similarities, differences, and unique points
 - **Process Generator**: Tailored recommendations based on project scenarios
@@ -106,8 +177,8 @@ Design and implement a web application that helps project managers, students, an
 |   +------------------------+   +------------------------+   +--------------------+  |
 |   |       Supabase         |   |      Qdrant Cloud      |   |    External APIs   |  |
 |   |   PostgreSQL 16        |   |    Vector Database     |   |        LLM         |  |
-|   |   + pgvector           |   |    337 embeddings      |   |     (GPT-OSS 120B) |  |
-|   |   337 sections         |   |    1024 dimensions     |   |   Voyage AI        |  |
+|   |   + pgvector           |   |    359 embeddings      |   |     (GPT-OSS 120B) |  |
+|   |   359 sections         |   |    1024 dimensions     |   |   Voyage AI        |  |
 |   |                        |   |                        |   |     (voyage-3)     |  |
 |   +------------------------+   +------------------------+   +--------------------+  |
 |                                                                                     |
@@ -263,7 +334,7 @@ The `scripts/load_data.py` loader performs:
 - Parent chain validation and integrity checks
 
 **Statistics**:
-- Total loaded: 337 sections
+- Total loaded: 359 sections
 - Token count: Auto-calculated for each section
 - Database size: ~20MB
 
@@ -304,7 +375,7 @@ Script: `scripts/migrate_qdrant.py`
 1. Fetch all points from local Qdrant (batch size: 100)
 2. Upload to Qdrant Cloud in batches (batch size: 100)
 3. Verify point count and collection status
-4. Total migration: 337 points successfully transferred
+4. Total migration: 359 points successfully transferred
 
 ---
 
@@ -902,7 +973,7 @@ const performStreamingSearch = async (query: string) => {
 - **Region**: Asia South 1 (Mumbai) - matches Supabase
 - **Plan**: Free 1GB cluster (permanent)
 - **Collection**: `pmwiki_sections`
-- **Points**: 337 vectors
+- **Points**: 359 vectors
 - **Distance**: Cosine similarity
 - **Dimensions**: 1024 (voyage-3-large)
 
@@ -1594,7 +1665,7 @@ python load_data.py --standard ISO_21502
 
 # Verify
 python load_data.py --stats
-# Expected output: 337 total sections loaded
+# Expected output: 359 total sections loaded
 ```
 
 **Start Backend**:

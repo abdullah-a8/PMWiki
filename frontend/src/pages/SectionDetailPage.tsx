@@ -100,6 +100,59 @@ export function SectionDetailPage() {
             <p className="text-muted-foreground mt-2">Section {section.section_number}</p>
           </div>
 
+        </CardHeader>
+
+        {/* Section Content */}
+        <CardContent className="space-y-4">
+          <div className="prose prose-zinc dark:prose-invert max-w-none">
+              <Markdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  // Style headings
+                  h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
+                  h2: ({ node, ...props }) => <h2 className="text-xl font-bold mt-5 mb-3" {...props} />,
+                  h3: ({ node, ...props }) => <h3 className="text-lg font-semibold mt-4 mb-2" {...props} />,
+                  h4: ({ node, ...props }) => <h4 className="text-base font-semibold mt-3 mb-2" {...props} />,
+
+                  // Style paragraphs
+                  p: ({ node, ...props }) => <p className="text-base leading-relaxed mb-4" {...props} />,
+
+                  // Style lists
+                  ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-4 space-y-1" {...props} />,
+                  ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-4 space-y-1" {...props} />,
+                  li: ({ node, ...props }) => <li className="text-base leading-relaxed ml-4" {...props} />,
+
+                  // Style emphasis
+                  strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
+                  em: ({ node, ...props }) => <em className="italic" {...props} />,
+
+                  // Style code blocks
+                  code: ({ node, className, children, ...props }) => {
+                    const isInline = !className;
+                    return isInline ? (
+                      <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                        {children}
+                      </code>
+                    ) : (
+                      <code className="block bg-muted p-3 rounded text-sm font-mono overflow-x-auto" {...props}>
+                        {children}
+                      </code>
+                    );
+                  },
+
+                  // Style blockquotes
+                  blockquote: ({ node, ...props }) => (
+                    <blockquote className="border-l-4 border-muted-foreground/20 pl-4 italic my-4" {...props} />
+                  ),
+
+                  // Style horizontal rules
+                  hr: ({ node, ...props }) => <hr className="my-6 border-border" {...props} />,
+                }}
+              >
+                {section.content}
+              </Markdown>
+            </div>
+
           <Separator />
 
           {/* Citation Section */}
@@ -158,85 +211,6 @@ export function SectionDetailPage() {
               <p className="text-sm bg-muted p-2 rounded">{section.citation_ieee}</p>
             </div>
           </div>
-        </CardHeader>
-
-        {/* Section Content */}
-        <CardContent className="space-y-4">
-          <Separator />
-          <div>
-            <h3 className="font-semibold mb-4">Content</h3>
-            <div className="prose prose-zinc dark:prose-invert max-w-none">
-              <Markdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  // Style headings
-                  h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
-                  h2: ({ node, ...props }) => <h2 className="text-xl font-bold mt-5 mb-3" {...props} />,
-                  h3: ({ node, ...props }) => <h3 className="text-lg font-semibold mt-4 mb-2" {...props} />,
-                  h4: ({ node, ...props }) => <h4 className="text-base font-semibold mt-3 mb-2" {...props} />,
-
-                  // Style paragraphs
-                  p: ({ node, ...props }) => <p className="text-base leading-relaxed mb-4" {...props} />,
-
-                  // Style lists
-                  ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-4 space-y-1" {...props} />,
-                  ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-4 space-y-1" {...props} />,
-                  li: ({ node, ...props }) => <li className="text-base leading-relaxed ml-4" {...props} />,
-
-                  // Style emphasis
-                  strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
-                  em: ({ node, ...props }) => <em className="italic" {...props} />,
-
-                  // Style code blocks
-                  code: ({ node, className, children, ...props }) => {
-                    const isInline = !className;
-                    return isInline ? (
-                      <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
-                        {children}
-                      </code>
-                    ) : (
-                      <code className="block bg-muted p-3 rounded text-sm font-mono overflow-x-auto" {...props}>
-                        {children}
-                      </code>
-                    );
-                  },
-
-                  // Style blockquotes
-                  blockquote: ({ node, ...props }) => (
-                    <blockquote className="border-l-4 border-muted-foreground/20 pl-4 italic my-4" {...props} />
-                  ),
-
-                  // Style horizontal rules
-                  hr: ({ node, ...props }) => <hr className="my-6 border-border" {...props} />,
-                }}
-              >
-                {section.content}
-              </Markdown>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Related Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Related Actions</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Button
-            variant="outline"
-            className="w-full justify-start"
-            onClick={() => navigate(`/library/${section.standard}`)}
-          >
-            View all sections from {getStandardDisplayName(section.standard)}
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-start"
-            onClick={() => navigate(`/search?q=${encodeURIComponent(section.section_title)}`)}
-          >
-            Search for similar content
-          </Button>
         </CardContent>
       </Card>
     </div>

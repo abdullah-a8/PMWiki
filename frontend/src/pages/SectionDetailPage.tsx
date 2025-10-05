@@ -235,15 +235,15 @@ export function SectionDetailPage() {
       <div className="flex items-center justify-between gap-4">
         <Button
           variant="outline"
-          onClick={() => previousSection && navigate(`/section/${previousSection.id}`)}
+          onClick={() => previousSection && navigate(`/sections/${previousSection.id}`)}
           disabled={!previousSection}
-          className="flex-1 justify-start"
+          className="flex-1 h-auto py-3 px-4"
         >
-          <ChevronLeft className="h-4 w-4 mr-2" />
-          <div className="flex flex-col items-start overflow-hidden">
-            <span className="text-xs text-muted-foreground">Previous</span>
+          <ChevronLeft className="h-4 w-4 mr-3 flex-shrink-0" />
+          <div className="flex flex-col items-start min-w-0 flex-1">
+            <span className="text-xs text-muted-foreground mb-0.5">Previous</span>
             {previousSection && (
-              <span className="text-sm truncate w-full">
+              <span className="text-sm font-medium truncate w-full text-left">
                 {previousSection.section_number}: {previousSection.section_title}
               </span>
             )}
@@ -252,19 +252,19 @@ export function SectionDetailPage() {
 
         <Button
           variant="outline"
-          onClick={() => nextSection && navigate(`/section/${nextSection.id}`)}
+          onClick={() => nextSection && navigate(`/sections/${nextSection.id}`)}
           disabled={!nextSection}
-          className="flex-1 justify-end"
+          className="flex-1 h-auto py-3 px-4"
         >
-          <div className="flex flex-col items-end overflow-hidden">
-            <span className="text-xs text-muted-foreground">Next</span>
+          <div className="flex flex-col items-end min-w-0 flex-1">
+            <span className="text-xs text-muted-foreground mb-0.5">Next</span>
             {nextSection && (
-              <span className="text-sm truncate w-full">
+              <span className="text-sm font-medium truncate w-full text-right">
                 {nextSection.section_number}: {nextSection.section_title}
               </span>
             )}
           </div>
-          <ChevronRight className="h-4 w-4 ml-2" />
+          <ChevronRight className="h-4 w-4 ml-3 flex-shrink-0" />
         </Button>
       </div>
     </div>

@@ -1,6 +1,6 @@
 # PMWiki: Citation-Focused RAG System for Project Management Standards
 
-**A comprehensive web application for exploring, comparing, and generating evidence-based project processes from PMBOK 7, PRINCE2, and ISO 21502 standards.**
+![PMWiki Home](Images/PMWiki_Home.png)
 
 ---
 

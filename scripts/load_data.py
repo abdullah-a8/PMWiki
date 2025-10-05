@@ -37,9 +37,9 @@ class DataLoader:
         self.processed_dir = self.data_dir / "processed"
         self.raw_dir = self.data_dir / "raw"
 
-        # File mappings - use cleaned PMBOK, raw for others
+        # File mappings - use Supabase-enhanced PMBOK with images, raw for others
         self.file_mapping = {
-            "PMBOK": self.processed_dir / "PMBOK_chunks_cleaned.json",
+            "PMBOK": self.raw_dir / "PMBOK_1" / "PMBOK_chunks_supabase.json",
             "PRINCE2": self.raw_dir / "PRINCE2_chunks.json",
             "ISO_21502": self.raw_dir / "ISO_21502_chunks.json"
         }
@@ -73,7 +73,7 @@ class DataLoader:
         return standard_upper
 
     def generate_citation_key(self, chunk: Dict[str, Any]) -> str:
-        """
+        r"""
         Generate citation key matching schema pattern: ^[A-Z0-9_]+_\d+(\.\d+)*$
         Example: PMBOK_1.2_5 (section 1.2, page 5), PRINCE2_3.4.1_10
         """

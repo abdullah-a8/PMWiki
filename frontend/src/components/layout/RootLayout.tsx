@@ -1,16 +1,23 @@
 import { Outlet } from "react-router-dom";
 import { useState } from "react";
 import { AppSidebar } from "./AppSidebar";
-import { Header } from "./Header";
 import { Breadcrumbs } from "./Breadcrumbs";
 
 export function RootLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="flex h-screen flex-col">
-      <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-      <div className="flex flex-1 overflow-hidden">
+    <div className="min-h-screen w-full relative bg-black">
+      {/* Indigo Cosmos Background with Top Glow */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99, 102, 241, 0.25), transparent 70%), #000000",
+        }}
+      />
+
+      {/* Content */}
+      <div className="flex h-screen relative z-10">
         {/* Sidebar */}
         <aside
           className={`${
@@ -18,7 +25,7 @@ export function RootLayout() {
           } flex-shrink-0 border-r transition-all duration-300 ease-in-out`}
         >
           <div className="h-full">
-            <AppSidebar isCollapsed={!sidebarOpen} />
+            <AppSidebar isCollapsed={!sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
           </div>
         </aside>
 

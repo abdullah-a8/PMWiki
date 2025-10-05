@@ -1,10 +1,13 @@
-import { Search, GitCompare, FileText, Library, Clock, X } from "lucide-react";
+import { Search, GitCompare, FileText, Library, Clock, X, Menu } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { searchHistoryStorage, type SearchHistoryItem } from "@/lib/searchHistory";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import type { HealthCheckResponse } from "@/types";
 
 const menuItems = [
   {
@@ -31,12 +34,23 @@ const menuItems = [
 
 interface AppSidebarProps {
   isCollapsed: boolean;
+  onToggle: () => void;
 }
 
-export function AppSidebar({ isCollapsed }: AppSidebarProps) {
+export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+
+  const { data: health, isLoading } = useQuery<HealthCheckResponse>({
+    queryKey: ["health"],
+    queryFn: async () => {
+      const response = await api.get("/v1/health");
+      return response.data;
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds
+    retry: 3,
+  });
 
   // Load search history from localStorage
   useEffect(() => {
@@ -95,6 +109,22 @@ export function AppSidebar({ isCollapsed }: AppSidebarProps) {
 
   return (
     <div className="flex h-full flex-col bg-background">
+      {/* Header with Logo and Toggle */}
+      <div className="flex h-16 shrink-0 items-center gap-3 border-b px-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onToggle}
+          className="-ml-1"
+        >
+          <Menu className="h-5 w-5" />
+          <span className="sr-only">Toggle sidebar</span>
+        </Button>
+        {!isCollapsed && (
+          <span className="text-lg font-semibold">PMWiki</span>
+        )}
+      </div>
+
       {/* Main Navigation */}
       <div className="p-4">
         <nav className="space-y-1">
@@ -213,18 +243,61 @@ export function AppSidebar({ isCollapsed }: AppSidebarProps) {
       {/* Collapsed state - just show icon */}
       {isCollapsed && searchHistory.length > 0 && (
         <div className="border-t mt-4 p-4">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center justify-center text-muted-foreground">
-                <Clock className="h-5 w-5" />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>Recent Searches ({searchHistory.length})</p>
-            </TooltipContent>
-          </Tooltip>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center justify-center text-muted-foreground">
+                  <Clock className="h-5 w-5" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>Recent Searches ({searchHistory.length})</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       )}
+
+      {/* Backend Connection Status */}
+      <div className="mt-auto border-t p-4">
+        <TooltipProvider delayDuration={0}>
+          {isCollapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center justify-center">
+                  <div
+                    className={`h-2 w-2 rounded-full ${
+                      isLoading
+                        ? "bg-yellow-500 animate-pulse"
+                        : health?.status === "healthy"
+                        ? "bg-green-500"
+                        : "bg-red-500"
+                    }`}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>{isLoading ? "Connecting" : health?.status === "healthy" ? "Connected" : "Offline"}</p>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <div className="flex items-center gap-2 text-sm">
+              <div
+                className={`h-2 w-2 rounded-full ${
+                  isLoading
+                    ? "bg-yellow-500 animate-pulse"
+                    : health?.status === "healthy"
+                    ? "bg-green-500"
+                    : "bg-red-500"
+                }`}
+              />
+              <span className="text-muted-foreground">
+                {isLoading ? "Connecting" : health?.status === "healthy" ? "Connected" : "Offline"}
+              </span>
+            </div>
+          )}
+        </TooltipProvider>
+      </div>
     </div>
   );
 }

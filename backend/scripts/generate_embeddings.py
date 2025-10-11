@@ -30,6 +30,10 @@ for env_path in env_locations:
 if not env_loaded:
     print("⚠️  Warning: No .env file found")
 
+# Ensure correct environment variables are set
+if not os.getenv("QDRANT_COLLECTION_NAME"):
+    os.environ["QDRANT_COLLECTION_NAME"] = "pmwiki_sections"
+
 # Add backend directory to path
 sys.path.insert(0, str(backend_dir))
 

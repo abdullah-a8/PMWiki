@@ -52,6 +52,15 @@ PMWiki is a production-ready citation-focused Retrieval-Augmented Generation (RA
 - Detailed justifications linked to specific standard sections
 - Standards alignment showing contribution from each framework
 
+**Topic Network Visualization**
+- Interactive graph visualization showing cross-standard topic relationships
+- K-means clustering (15-35 clusters) to discover semantic topic groups
+- Dual view modes: cluster-level overview and detailed section-level view
+- Real-time filtering by similarity threshold (0.5-0.8) and standards
+- Force-directed layout with zoom, pan, and minimap navigation
+- 620KB pre-computed graph data with ~360 nodes and cross-standard edges
+- Click nodes to view cluster/section details with member breakdowns
+
 **Standards Library**
 - Complete repository of 359 sections with full text and metadata
 - Hierarchical table of contents navigation
@@ -107,6 +116,8 @@ PMWiki is a production-ready citation-focused Retrieval-Augmented Generation (RA
 - **Embedding Dimensions**: 1024 (Voyage AI voyage-3-large model)
 - **LLM**: OpenAI GPT-OSS 120B
 - **Search Quality**: 0.5-0.7 cosine similarity for relevant queries
+- **Topic Clusters**: 15-35 optimal clusters discovered via K-means with silhouette score optimization
+- **Graph Data**: 20,678 lines JSON with nodes, edges, clusters, and metadata
 - **Deployment**: Railway (Frontend & Backend) + Supabase (PostgreSQL) + Qdrant Cloud
 
 ---
@@ -209,6 +220,7 @@ Design and implement a web application that helps project managers, students, an
 - **Routing**: React Router 7.9.3
 - **Form Management**: React Hook Form 7.63.0 + Zod 4.1.11
 - **Markdown Rendering**: react-markdown 10.1.0 + remark-gfm 4.0.1
+- **Graph Visualization**: React Flow 12.8.6 (force-directed layout, zoom, pan, minimap)
 
 #### Deployment
 - **Frontend & Backend Hosting**: Railway
@@ -377,6 +389,29 @@ Script: `scripts/migrate_qdrant.py`
 3. Verify point count and collection status
 4. Total migration: 359 points successfully transferred
 
+#### 5. Topic Clustering & Graph Generation
+
+Script: `backend/scripts/generate_topic_clusters.py`
+
+**Process**:
+1. **Fetch Embeddings**: Query all 359 sections with 1024-dim embeddings from PostgreSQL
+2. **Optimal K Discovery**: Test K-means with k=15 to k=35, select optimal via silhouette score
+3. **Clustering**: Apply K-means to group sections into 15-35 semantic topic clusters
+4. **Cluster Metadata**: Auto-generate cluster names, compute sizes, standard distributions
+5. **Similarity Edges**: Calculate top-10 cross-standard similarities per section (cosine ≥0.5)
+6. **Export Graph**: Generate `backend/data/graph_data.json` with nodes, edges, clusters
+
+**Output**:
+- File size: 620KB (20,678 lines)
+- Clusters: 15-35 topic groups
+- Nodes: 359 sections with cluster assignments
+- Edges: ~500-800 cross-standard connections
+
+**Dependencies**:
+- `scikit-learn`: K-means, silhouette_score
+- `numpy`: Array operations
+- `pandas`: Optional data analysis
+
 ---
 
 ## Backend System
@@ -495,7 +530,8 @@ app/routers/
 ├── health.py         # Health checks
 ├── search.py         # Search & retrieval endpoints
 ├── comparisons.py    # Comparison engine
-└── process.py        # Process generation
+├── process.py        # Process generation
+└── graph.py          # Topic network graph API
 ```
 
 #### Request/Response Flow
@@ -530,6 +566,161 @@ async def stream_search(request: SearchRequest, db: Session = Depends(get_db)):
 - Real-time user feedback during LLM generation
 - Improved perceived performance
 - Progressive content loading
+
+---
+
+## Topic Network Clustering & Visualization
+
+### Overview
+
+The Topic Network feature provides an interactive graph visualization that reveals semantic relationships and thematic clusters across all three project management standards. Using unsupervised machine learning (K-means clustering) on 1024-dimensional embeddings, the system automatically discovers 15-35 topic groups and computes cross-standard similarity connections.
+
+### Data Generation Pipeline
+
+#### Script: `backend/scripts/generate_topic_clusters.py`
+
+**Process Flow**:
+
+1. **Fetch Embeddings** (PostgreSQL):
+   - Query all 359 sections with their 1024-dim voyage-3-large embeddings
+   - Convert pgvector format to NumPy arrays for processing
+   - Preserve section metadata (ID, standard, title, pages)
+
+2. **Optimal Cluster Discovery**:
+   - Test K-means with k=15 to k=35 clusters
+   - Calculate silhouette scores for each k value
+   - Select optimal k with highest silhouette score (typically ~20-25 clusters)
+   - Ensures balanced cluster sizes and meaningful separation
+
+3. **K-means Clustering**:
+   - Apply optimal k to embeddings (random_state=42 for reproducibility)
+   - Assign each section to its nearest cluster centroid
+   - Generate cluster metadata:
+     - **Name**: Auto-generated from common keywords in member titles
+     - **Size**: Number of member sections
+     - **Standards**: Distribution of PMBOK/PRINCE2/ISO sections
+     - **Color**: Based on dominant standard (Blue/Purple/Teal)
+     - **Representative**: Most central section in cluster
+
+4. **Cross-Standard Similarity Computation**:
+   - For each section, find top 10 similar sections from OTHER standards
+   - Use PostgreSQL vector cosine similarity (`<=>` operator)
+   - Filter by similarity threshold ≥0.5
+   - Create undirected edges between similar sections
+   - Result: ~500-800 cross-standard connections
+
+5. **Graph Data Export**:
+   - Generate `backend/data/graph_data.json` (620KB, 20,678 lines)
+   - Structure:
+     - `metadata`: Timestamps, counts, thresholds
+     - `clusters`: Array of 15-35 cluster objects
+     - `nodes`: 359 section nodes with cluster assignments
+     - `edges`: Cross-standard similarity edges with weights
+
+**Configuration**:
+```python
+MIN_CLUSTERS = 15          # Minimum k for optimization
+MAX_CLUSTERS = 35          # Maximum k for optimization
+SIMILARITY_THRESHOLD = 0.5 # Minimum cosine similarity for edges
+TOP_K_SIMILAR = 10         # Max similar sections per section
+```
+
+**Dependencies**:
+- `scikit-learn`: K-means clustering, silhouette score
+- `numpy`: Array operations, embedding processing
+- `pandas`: Data analysis (optional)
+
+### Graph API (`backend/app/routers/graph.py`)
+
+**Design Philosophy**: Serve pre-computed graph data from JSON file (no on-the-fly clustering).
+
+**Key Features**:
+
+1. **Dual View Modes**:
+   - **Clusters Mode** (default): Aggregate sections into cluster nodes
+     - Shows 15-35 cluster nodes instead of 359 sections
+     - Cluster size = number of member sections
+     - Cluster edges = aggregated cross-cluster connections
+   - **Sections Mode**: Show all 359 individual section nodes
+     - Full detail view with all original edges
+
+2. **Real-Time Filtering**:
+   - **Similarity Threshold**: Adjust edge visibility (0.5-0.8)
+   - **Standards Filter**: Show only PMBOK, PRINCE2, or ISO sections
+   - Recalculates cluster sizes and edges dynamically
+
+3. **Endpoints**:
+   - `GET /topic-network`: Main graph data with filtering
+   - `GET /clusters/{id}`: Cluster detail with member sections
+   - `GET /stats`: Overall graph statistics
+
+**Performance**:
+- Initial load: <200ms (read 620KB JSON from disk)
+- Filtering: <50ms (in-memory filtering)
+- No database queries (fully pre-computed)
+
+### Frontend Visualization (`frontend/src/pages/TopicGraphPage.tsx`)
+
+**Technology**: React Flow 12.8.6
+
+**Features**:
+
+1. **Interactive Graph**:
+   - Force-directed layout (automatic node positioning)
+   - Zoom controls (fit view, zoom in/out)
+   - Pan navigation (drag canvas)
+   - Minimap for overview
+
+2. **Visual Design**:
+   - **Nodes**:
+     - Cluster mode: Circle size = member count
+     - Section mode: Uniform small circles
+     - Color-coded by standard (Blue/Purple/Teal)
+   - **Edges**:
+     - Width = similarity strength
+     - Opacity based on threshold
+     - Animated on hover
+   - **Labels**: Section numbers or cluster names
+
+3. **Interactive Controls**:
+   - **Similarity Slider**: 0.5-0.8 threshold adjustment
+   - **View Mode Toggle**: Clusters ↔ Sections
+   - **Standards Filter**: Multi-select checkboxes
+   - Real-time graph updates (smooth transitions)
+
+4. **Node Details Panel**:
+   - Click any node → Show detail sidebar
+   - Cluster view: Member sections, standard distribution
+   - Section view: Full content, citations, similar sections
+
+**Components**:
+```
+frontend/src/components/graph/
+├── GraphControls.tsx      # Filters and controls
+├── NodeDetailPanel.tsx    # Selected node details
+└── TopicGraph.tsx         # Main React Flow graph
+```
+
+**State Management**:
+- TanStack Query for API data fetching
+- Local state for user interactions (zoom, selection)
+- Lazy loading of graph page (code splitting)
+
+### Use Cases
+
+1. **Discovery**: Explore how topics span across standards
+2. **Research**: Identify which standards cover specific topics
+3. **Comparison**: See which topics are unique vs shared
+4. **Navigation**: Jump from cluster to individual sections
+5. **Analysis**: Understand topic density and relationships
+
+### Future Enhancements
+
+- Dynamic clustering (regenerate on demand)
+- Export graph as PNG/SVG
+- Advanced layout algorithms (hierarchical, circular)
+- Search within graph (highlight matching nodes)
+- Path finding between sections
 
 ---
 
@@ -593,6 +784,28 @@ async def stream_search(request: SearchRequest, db: Session = Depends(get_db)):
   - Standards alignment (3 columns)
   - Token usage stats
 - "New Process" button for multiple generations
+
+**TopicGraphPage** (`TopicGraphPage.tsx`):
+- **Interactive graph visualization** powered by React Flow:
+  - Force-directed layout with zoom, pan, and minimap
+  - 359 section nodes or 15-35 cluster nodes (switchable)
+  - Color-coded by standard (Blue/Purple/Teal)
+  - Edge width proportional to similarity strength
+- **Control panel**:
+  - Similarity threshold slider (0.5-0.8)
+  - View mode toggle (Clusters ↔ Sections)
+  - Standards filter (multi-select: PMBOK, PRINCE2, ISO 21502)
+  - Fit view / Reset controls
+- **Node interaction**:
+  - Click node → Detail panel slides in from right
+  - Cluster mode: Shows member sections, standard distribution
+  - Section mode: Full content with citations
+  - Hover: Highlight connected nodes and edges
+- **Performance optimizations**:
+  - Lazy loading (code-split from main bundle)
+  - Memoized graph calculations
+  - Virtual rendering for large graphs
+  - Smooth transitions on filter changes
 
 **StandardsLibraryPage** (`StandardsLibraryPage.tsx`):
 - Standard overview card with description
@@ -913,7 +1126,29 @@ const performStreamingSearch = async (query: string) => {
   - Standards alignment
   - Token usage
 
-**Total Endpoints**: 11 (including health check)
+#### Topic Network Visualization
+
+**GET** `/api/v1/graph/topic-network`
+- **Description**: Get pre-computed topic network graph data for visualization
+- **Query Parameters**:
+  - `similarity_threshold`: Minimum similarity for edges (0.5-0.8, default 0.6)
+  - `view_mode`: Display mode - 'clusters' or 'sections' (default 'clusters')
+  - `standards`: Comma-separated filter (e.g., 'PMBOK,PRINCE2')
+- **Response**:
+  - `metadata`: Generation timestamp, node/edge/cluster counts, similarity threshold
+  - `clusters`: Array of topic clusters with names, sizes, dominant standards, colors
+  - `nodes`: Section or cluster nodes (depends on view_mode)
+  - `edges`: Cross-standard similarity connections with weights
+
+**GET** `/api/v1/graph/clusters/{cluster_id}`
+- **Description**: Get detailed information about a specific topic cluster
+- **Response**: Cluster metadata, member sections, internal connections, statistics
+
+**GET** `/api/v1/graph/stats`
+- **Description**: Get overall graph statistics and metrics
+- **Response**: Node counts, edge stats, cluster distribution, standards coverage
+
+**Total Endpoints**: 14 (including health check and 3 graph endpoints)
 
 ---
 
@@ -1451,17 +1686,33 @@ PMWiki/
 │   │   ├── db/               # Database connection
 │   │   ├── models/           # SQLAlchemy models
 │   │   ├── routers/          # API endpoints
+│   │   │   ├── health.py
+│   │   │   ├── search.py
+│   │   │   ├── comparisons.py
+│   │   │   ├── process.py
+│   │   │   └── graph.py      # Topic network API
 │   │   ├── schemas/          # Pydantic schemas
 │   │   └── services/         # Business logic
+│   ├── data/
+│   │   └── graph_data.json   # Pre-computed graph (620KB)
+│   ├── scripts/
+│   │   └── generate_topic_clusters.py  # Clustering script
 │   ├── main.py               # Application entry
 │   ├── requirements.txt      # Python dependencies
 │   └── railway.json          # Deployment config
 ├── frontend/                  # React frontend
 │   ├── src/
 │   │   ├── components/       # React components
+│   │   │   ├── graph/        # Graph visualization components
+│   │   │   │   ├── GraphControls.tsx
+│   │   │   │   ├── NodeDetailPanel.tsx
+│   │   │   │   └── TopicGraph.tsx
+│   │   │   └── layout/
 │   │   ├── lib/              # Utilities
 │   │   ├── pages/            # Route pages
+│   │   │   └── TopicGraphPage.tsx
 │   │   └── types/            # TypeScript types
+│   │       └── graph.ts      # Graph data types
 │   ├── package.json          # Node dependencies
 │   └── railway.json          # Deployment config
 ├── data/                      # Raw and processed data
@@ -1540,6 +1791,11 @@ python -m app.services.voyage_service  # Or use dedicated script
 # Migrate to Qdrant Cloud (if needed)
 cd scripts
 python migrate_qdrant.py
+
+# Generate topic clusters and graph data
+cd backend/scripts
+python generate_topic_clusters.py
+# Output: backend/data/graph_data.json (620KB)
 ```
 
 ### Git Workflow

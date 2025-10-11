@@ -1409,6 +1409,7 @@ const performStreamingSearch = async (query: string) => {
 - Streaming SSE for real-time feedback
 - Search history caching with full response data
 - Dual comparison modes (AI-powered topic vs section-to-section)
+- Topic Network Visualization (K-means clustering, cross-standard similarities)
 
 #### Clarity & Justification - 100/100
 
@@ -2113,80 +2114,6 @@ See **Deployment Architecture** section for complete Railway + Supabase + Qdrant
 2. Open relevant sections in new tabs
 3. Copy citations from each section detail page
 4. Compile in your reference manager
-
-**Future Feature** (Phase 7):
-- Export bibliography in BibTeX, APA, or IEEE format
-- Batch citation generation
-
-### For Developers
-
-#### API Integration
-
-**Example**: Integrate PMWiki search into your application
-
-```javascript
-// JavaScript/TypeScript example
-const searchPMWiki = async (query) => {
-  const response = await fetch('https://your-backend.railway.app/api/v1/search', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      query: query,
-      top_k_per_standard: 3,
-      score_threshold: 0.4
-    })
-  });
-
-  const data = await response.json();
-
-  // data.answer: LLM-generated answer
-  // data.primary_sources: Array of top sections
-  // data.additional_context: Extra reading
-  // data.token_usage: Model and token count
-
-  return data;
-};
-
-// Usage
-const results = await searchPMWiki("What is agile project management?");
-console.log(results.answer);
-console.log(results.primary_sources.map(s => s.citation));
-```
-
-**Example**: Stream search results
-
-```javascript
-const streamSearch = async (query) => {
-  const response = await fetch('https://your-backend.railway.app/api/v1/search/stream', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: query })
-  });
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    const chunk = decoder.decode(value);
-    const lines = chunk.split('\n');
-
-    for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        const event = JSON.parse(line.slice(6));
-
-        if (event.type === 'metadata') {
-          console.log('Sources:', event.primary_sources);
-        } else if (event.type === 'chunk') {
-          process.stdout.write(event.content);
-        }
-      }
-    }
-  }
-};
-```
 
 ---
 

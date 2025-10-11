@@ -34,6 +34,8 @@ multidict==6.6.4
 numpy==2.3.3
 orjson==3.11.3
 packaging==25.0
+pandas==2.3.3
+scikit-learn==1.7.2
 pillow==11.3.0
 portalocker==3.2.0
 propcache==0.3.2

@@ -1,5 +1,6 @@
 import axios from "axios"
 import { API_BASE_URL } from "./constants"
+import type { GraphParams, GraphData, ClusterDetails, GraphStats } from "@/types/graph"
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -10,6 +11,18 @@ export const apiClient = axios.create({
 
 // Export as `api` for convenience
 export const api = apiClient
+
+// Graph API methods
+export const graphApi = {
+  getTopicNetwork: (params?: GraphParams) =>
+    api.get<GraphData>('/v1/graph/topic-network', { params }),
+  
+  getClusterDetails: (clusterId: string) =>
+    api.get<ClusterDetails>(`/v1/graph/clusters/${clusterId}`),
+  
+  getGraphStats: () =>
+    api.get<GraphStats>('/v1/graph/stats'),
+}
 
 // Request interceptor
 apiClient.interceptors.request.use(

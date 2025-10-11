@@ -1,4 +1,4 @@
-import { Search, GitCompare, FileText, Library, Clock, X, Menu } from "lucide-react";
+import { Search, GitCompare, FileText, Library, Clock, X, Menu, Network } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,11 @@ const menuItems = [
     title: "Generate Process",
     url: "/generate",
     icon: FileText,
+  },
+  {
+    title: "Topic Network",
+    url: "/graph",
+    icon: Network,
   },
   {
     title: "Browse Library",

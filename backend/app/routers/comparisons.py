@@ -308,12 +308,15 @@ async def get_sections_by_topic(
             )
 
             if not results:
+                logger.warning(f"No Qdrant results for {standard} with threshold {request.score_threshold}")
                 all_sections[standard] = None
                 continue
 
             # Fetch full section data
             section_id = str(results[0]['id'])
             relevance_score = results[0]['score']
+
+            logger.info(f"Qdrant returned {standard} section with ID: {section_id}, score: {relevance_score:.4f}")
 
             query = text("""
                 SELECT
@@ -332,6 +335,7 @@ async def get_sections_by_topic(
             row = db.execute(query, {"section_id": section_id}).fetchone()
 
             if row:
+                logger.info(f"Database found {standard} section: {row[3]}")
                 year_map = {'PMBOK': '2021', 'PRINCE2': '2017', 'ISO_21502': '2020'}
                 std = row[1]
                 year = year_map.get(std, '2021')
@@ -353,6 +357,7 @@ async def get_sections_by_topic(
                     "relevance_score": relevance_score
                 }
             else:
+                logger.warning(f"Database returned no row for {standard} section ID: {section_id}")
                 all_sections[standard] = None
 
         logger.info(f"Section search completed for topic: '{request.topic}'")

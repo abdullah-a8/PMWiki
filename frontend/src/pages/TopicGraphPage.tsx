@@ -46,10 +46,27 @@ export function TopicGraphPage() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       nodes = nodes.filter(
-        (node) =>
-          node.section_title.toLowerCase().includes(query) ||
-          node.section_number.toLowerCase().includes(query) ||
-          node.standard.toLowerCase().includes(query)
+        (node) => {
+          // Check if this is a cluster node
+          const isCluster = 'type' in node && node.type === 'cluster';
+          
+          if (isCluster) {
+            // For cluster nodes, search by name and standards
+            const clusterNode = node as any;
+            return (
+              clusterNode.name.toLowerCase().includes(query) ||
+              clusterNode.standards.some((std: string) => std.toLowerCase().includes(query))
+            );
+          } else {
+            // For section nodes, search by title, number, and standard
+            const sectionNode = node as any;
+            return (
+              sectionNode.section_title.toLowerCase().includes(query) ||
+              sectionNode.section_number.toLowerCase().includes(query) ||
+              sectionNode.standard.toLowerCase().includes(query)
+            );
+          }
+        }
       );
     }
 

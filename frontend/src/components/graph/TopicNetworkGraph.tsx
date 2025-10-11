@@ -300,7 +300,6 @@ export const TopicNetworkGraph = memo(function TopicNetworkGraph({
         defaultViewport={{ x: 0, y: 0, zoom: 0.5 }}
         attributionPosition="bottom-left"
         proOptions={{ hideAttribution: true }}
-        edgesUpdatable={false}
         edgesFocusable={false}
         nodesDraggable={true}
         nodesConnectable={false}
@@ -308,10 +307,10 @@ export const TopicNetworkGraph = memo(function TopicNetworkGraph({
         <Background />
         <Controls />
         <MiniMap
-          nodeColor={(node) => {
+          nodeColor={(node): string => {
             // Cluster nodes have a color property
             if (node.data.color) {
-              return node.data.color;
+              return node.data.color as string;
             }
             // Section nodes have a standard property
             const standard = node.data.standard as StandardType;

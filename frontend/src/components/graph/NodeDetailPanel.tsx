@@ -56,7 +56,7 @@ export const NodeDetailPanel = memo(function NodeDetailPanel({
         connectionCount: edge.connection_count 
       } : null;
     })
-    .filter((item): item is { node: GraphNode | ClusterNode; similarity: number; connectionCount?: number } => item !== null)
+    .filter((item): item is { node: GraphNode | ClusterNode; similarity: number; connectionCount: number | undefined } => item !== null)
     .sort((a, b) => b.similarity - a.similarity);
 
   return (

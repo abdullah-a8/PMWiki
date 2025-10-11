@@ -29,12 +29,6 @@ interface GraphControlsProps {
 
 const STANDARDS: StandardType[] = ['PMBOK', 'PRINCE2', 'ISO_21502'];
 
-const STANDARD_COLORS: Record<StandardType, string> = {
-  PMBOK: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  PRINCE2: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
-  ISO_21502: 'bg-teal-500/10 text-teal-500 border-teal-500/20',
-};
-
 export function GraphControls({
   similarityThreshold,
   onSimilarityThresholdChange,

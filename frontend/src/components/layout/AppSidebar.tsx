@@ -1,10 +1,12 @@
-import { Search, GitCompare, FileText, Library, Clock, X, Menu, Network } from "lucide-react";
+import { Search, GitCompare, FileText, Library, Clock, X, Menu, Network, Bookmark, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { searchHistoryStorage, type SearchHistoryItem } from "@/lib/searchHistory";
+import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useSearchHistory, useSearchHistoryActions, useBookmarkCount, useBookmarkActions, useBookmarksByStandard } from "@/stores/useUserDataStore";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { HealthCheckResponse } from "@/types";
@@ -45,7 +47,32 @@ interface AppSidebarProps {
 export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+  const searchHistory = useSearchHistory();
+  const { removeSearch, clearSearchHistory } = useSearchHistoryActions();
+
+  // Bookmarks state
+  const bookmarkCount = useBookmarkCount();
+  const pmbokBookmarks = useBookmarksByStandard('PMBOK');
+  const prince2Bookmarks = useBookmarksByStandard('PRINCE2');
+  const isoBookmarks = useBookmarksByStandard('ISO_21502');
+  const { clearBookmarks } = useBookmarkActions();
+
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({
+    PMBOK: false,
+    PRINCE2: false,
+    ISO_21502: false,
+  });
+
+  const [isBookmarksSectionCollapsed, setIsBookmarksSectionCollapsed] = useState(false);
+  const [showClearBookmarksDialog, setShowClearBookmarksDialog] = useState(false);
+  const [showClearHistoryDialog, setShowClearHistoryDialog] = useState(false);
+
+  const toggleGroup = (standard: string) => {
+    setCollapsedGroups(prev => ({
+      ...prev,
+      [standard]: !prev[standard],
+    }));
+  };
 
   const { data: health, isLoading } = useQuery<HealthCheckResponse>({
     queryKey: ["health"],
@@ -57,45 +84,13 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
     retry: 3,
   });
 
-  // Load search history from localStorage
-  useEffect(() => {
-    const loadHistory = () => {
-      const history = searchHistoryStorage.getHistory();
-      setSearchHistory(history);
-    };
-
-    loadHistory();
-
-    // Listen for storage changes (from other tabs or updates)
-    const handleStorageChange = () => {
-      loadHistory();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    // Custom event for same-tab updates
-    window.addEventListener('searchHistoryUpdated', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('searchHistoryUpdated', handleStorageChange);
-    };
-  }, []);
-
   const handleHistoryClick = (query: string) => {
     navigate(`/?q=${encodeURIComponent(query)}`, { state: { fromHistory: true } });
   };
 
   const handleRemoveHistory = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    searchHistoryStorage.removeSearch(id);
-    setSearchHistory(searchHistoryStorage.getHistory());
-    window.dispatchEvent(new Event('searchHistoryUpdated'));
-  };
-
-  const handleClearHistory = () => {
-    searchHistoryStorage.clearHistory();
-    setSearchHistory([]);
-    window.dispatchEvent(new Event('searchHistoryUpdated'));
+    removeSearch(id);
   };
 
   const formatTimestamp = (timestamp: number) => {
@@ -179,9 +174,225 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
         </nav>
       </div>
 
+      {/* Bookmarks Section */}
+      {!isCollapsed && bookmarkCount > 0 && (
+        <div className="overflow-hidden flex flex-col mt-4 shrink-0" style={{ maxHeight: isBookmarksSectionCollapsed ? 'auto' : '40vh' }}>
+          <div className="px-4 pb-2 flex items-center justify-between shrink-0">
+            <button
+              onClick={() => setIsBookmarksSectionCollapsed(!isBookmarksSectionCollapsed)}
+              className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {isBookmarksSectionCollapsed ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+              <Bookmark className="h-4 w-4" />
+              <span>Bookmarks</span>
+              <Badge variant="secondary" className="text-xs">
+                {bookmarkCount}
+              </Badge>
+            </button>
+            {!isBookmarksSectionCollapsed && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => setShowClearBookmarksDialog(true)}
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+
+          {!isBookmarksSectionCollapsed && (
+            <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 pb-3 min-h-0">
+            <div className="space-y-1">
+              {/* PMBOK Group */}
+              {pmbokBookmarks.length > 0 && (
+                <div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-between h-8 px-2"
+                    onClick={() => toggleGroup('PMBOK')}
+                  >
+                    <div className="flex items-center gap-2">
+                      {collapsedGroups.PMBOK ? (
+                        <ChevronRight className="h-3 w-3" />
+                      ) : (
+                        <ChevronDown className="h-3 w-3" />
+                      )}
+                      <Badge
+                        variant="outline"
+                        className="bg-blue-500/10 text-blue-500 border-blue-500/20 text-xs"
+                      >
+                        PMBOK
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {pmbokBookmarks.length}
+                    </span>
+                  </Button>
+
+                  {!collapsedGroups.PMBOK && (
+                    <div className="ml-4 mt-1 space-y-1">
+                      {pmbokBookmarks.map((bookmark) => (
+                        <div
+                          key={bookmark.id}
+                          className="group relative rounded-lg transition-colors cursor-pointer hover:bg-secondary/50 min-w-0"
+                          onClick={() => navigate(`/sections/${bookmark.id}`)}
+                        >
+                          <div className="p-2 min-w-0">
+                            <p className="text-sm line-clamp-2 text-foreground break-words">
+                              {bookmark.section_title}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                § {bookmark.section_number}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* PRINCE2 Group */}
+              {prince2Bookmarks.length > 0 && (
+                <div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-between h-8 px-2"
+                    onClick={() => toggleGroup('PRINCE2')}
+                  >
+                    <div className="flex items-center gap-2">
+                      {collapsedGroups.PRINCE2 ? (
+                        <ChevronRight className="h-3 w-3" />
+                      ) : (
+                        <ChevronDown className="h-3 w-3" />
+                      )}
+                      <Badge
+                        variant="outline"
+                        className="bg-purple-500/10 text-purple-500 border-purple-500/20 text-xs"
+                      >
+                        PRINCE2
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {prince2Bookmarks.length}
+                    </span>
+                  </Button>
+
+                  {!collapsedGroups.PRINCE2 && (
+                    <div className="ml-4 mt-1 space-y-1">
+                      {prince2Bookmarks.map((bookmark) => (
+                        <div
+                          key={bookmark.id}
+                          className="group relative rounded-lg transition-colors cursor-pointer hover:bg-secondary/50 min-w-0"
+                          onClick={() => navigate(`/sections/${bookmark.id}`)}
+                        >
+                          <div className="p-2 min-w-0">
+                            <p className="text-sm line-clamp-2 text-foreground break-words">
+                              {bookmark.section_title}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                § {bookmark.section_number}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ISO 21502 Group */}
+              {isoBookmarks.length > 0 && (
+                <div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-between h-8 px-2"
+                    onClick={() => toggleGroup('ISO_21502')}
+                  >
+                    <div className="flex items-center gap-2">
+                      {collapsedGroups.ISO_21502 ? (
+                        <ChevronRight className="h-3 w-3" />
+                      ) : (
+                        <ChevronDown className="h-3 w-3" />
+                      )}
+                      <Badge
+                        variant="outline"
+                        className="bg-teal-500/10 text-teal-500 border-teal-500/20 text-xs"
+                      >
+                        ISO 21502
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {isoBookmarks.length}
+                    </span>
+                  </Button>
+
+                  {!collapsedGroups.ISO_21502 && (
+                    <div className="ml-4 mt-1 space-y-1">
+                      {isoBookmarks.map((bookmark) => (
+                        <div
+                          key={bookmark.id}
+                          className="group relative rounded-lg transition-colors cursor-pointer hover:bg-secondary/50 min-w-0"
+                          onClick={() => navigate(`/sections/${bookmark.id}`)}
+                        >
+                          <div className="p-2 min-w-0">
+                            <p className="text-sm line-clamp-2 text-foreground break-words">
+                              {bookmark.section_title}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                § {bookmark.section_number}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+          )}
+        </div>
+      )}
+
+      {/* Collapsed state - show bookmark icon */}
+      {isCollapsed && bookmarkCount > 0 && (
+        <div className="mt-4 py-3">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center justify-center text-muted-foreground">
+                  <Bookmark className="h-5 w-5" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>Bookmarks ({bookmarkCount})</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      )}
+
       {/* Recent Searches Section */}
       {!isCollapsed && searchHistory.length > 0 && (
-        <div className="flex-1 overflow-hidden flex flex-col mt-4 min-h-0">
+        <div className={cn(
+          "flex-1 overflow-hidden flex flex-col min-h-0",
+          bookmarkCount > 0 ? (isBookmarksSectionCollapsed ? "mt-2" : "mt-2") : "mt-4"
+        )}>
           <div className="px-4 pb-2 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <Clock className="h-4 w-4" />
@@ -191,7 +402,7 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
               variant="ghost"
               size="sm"
               className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-              onClick={handleClearHistory}
+              onClick={() => setShowClearHistoryDialog(true)}
             >
               Clear
             </Button>
@@ -301,6 +512,39 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
           )}
         </TooltipProvider>
       </div>
+
+      {/* Confirmation Dialogs */}
+      <ConfirmDialog
+        open={showClearBookmarksDialog}
+        onOpenChange={setShowClearBookmarksDialog}
+        onConfirm={clearBookmarks}
+        title="Clear All Bookmarks?"
+        description={`Are you sure you want to remove all ${bookmarkCount} bookmark${bookmarkCount !== 1 ? 's' : ''}? This action cannot be undone.`}
+        confirmText="Clear Bookmarks"
+        cancelText="Cancel"
+        variant="destructive"
+        icon={
+          <div className="rounded-full p-2 bg-red-500/10 text-red-500">
+            <Trash2 className="h-5 w-5" />
+          </div>
+        }
+      />
+
+      <ConfirmDialog
+        open={showClearHistoryDialog}
+        onOpenChange={setShowClearHistoryDialog}
+        onConfirm={clearSearchHistory}
+        title="Clear Search History?"
+        description={`Are you sure you want to clear all ${searchHistory.length} search ${searchHistory.length !== 1 ? 'entries' : 'entry'}? This action cannot be undone.`}
+        confirmText="Clear History"
+        cancelText="Cancel"
+        variant="destructive"
+        icon={
+          <div className="rounded-full p-2 bg-red-500/10 text-red-500">
+            <Trash2 className="h-5 w-5" />
+          </div>
+        }
+      />
     </div>
   );
 }

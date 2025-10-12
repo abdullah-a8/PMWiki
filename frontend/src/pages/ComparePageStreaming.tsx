@@ -13,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { BookmarkButton } from "@/components/bookmarks/BookmarkButton";
 import { API_BASE_URL } from "@/lib/constants";
 import type { SectionsByTopicResponse } from "@/types";
 import ReactMarkdown from "react-markdown";
@@ -483,9 +484,28 @@ export function ComparePageStreaming() {
                           className="space-y-2.5 hover:bg-muted/50 p-3 -mx-3 rounded-lg transition-colors cursor-pointer"
                           onClick={() => navigate(`/sections/${source.id}`)}
                         >
-                          <div>
-                            <p className="font-semibold text-sm leading-tight">{source.section_title}</p>
-                            <p className="text-xs text-muted-foreground mt-1">§ {source.section_number}</p>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <p className="font-semibold text-sm leading-tight">{source.section_title}</p>
+                              <p className="text-xs text-muted-foreground mt-1">§ {source.section_number}</p>
+                            </div>
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <BookmarkButton
+                                section={{
+                                  id: source.id,
+                                  standard: 'PMBOK',
+                                  section_number: source.section_number,
+                                  section_title: source.section_title,
+                                  page_start: source.page_start,
+                                  page_end: source.page_end,
+                                  content: source.content_preview,
+                                  citation: source.citation,
+                                  relevance_score: source.relevance_score,
+                                }}
+                                from="comparison"
+                                size="sm"
+                              />
+                            </div>
                           </div>
                           <p className="text-xs text-muted-foreground/90 line-clamp-3 leading-relaxed">
                             {source.content_preview}
@@ -542,9 +562,28 @@ export function ComparePageStreaming() {
                           className="space-y-2.5 hover:bg-muted/50 p-3 -mx-3 rounded-lg transition-colors cursor-pointer"
                           onClick={() => navigate(`/sections/${source.id}`)}
                         >
-                          <div>
-                            <p className="font-semibold text-sm leading-tight">{source.section_title}</p>
-                            <p className="text-xs text-muted-foreground mt-1">§ {source.section_number}</p>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <p className="font-semibold text-sm leading-tight">{source.section_title}</p>
+                              <p className="text-xs text-muted-foreground mt-1">§ {source.section_number}</p>
+                            </div>
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <BookmarkButton
+                                section={{
+                                  id: source.id,
+                                  standard: 'PRINCE2',
+                                  section_number: source.section_number,
+                                  section_title: source.section_title,
+                                  page_start: source.page_start,
+                                  page_end: source.page_end,
+                                  content: source.content_preview,
+                                  citation: source.citation,
+                                  relevance_score: source.relevance_score,
+                                }}
+                                from="comparison"
+                                size="sm"
+                              />
+                            </div>
                           </div>
                           <p className="text-xs text-muted-foreground/90 line-clamp-3 leading-relaxed">
                             {source.content_preview}
@@ -601,9 +640,28 @@ export function ComparePageStreaming() {
                           className="space-y-2.5 hover:bg-muted/50 p-3 -mx-3 rounded-lg transition-colors cursor-pointer"
                           onClick={() => navigate(`/sections/${source.id}`)}
                         >
-                          <div>
-                            <p className="font-semibold text-sm leading-tight">{source.section_title}</p>
-                            <p className="text-xs text-muted-foreground mt-1">§ {source.section_number}</p>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <p className="font-semibold text-sm leading-tight">{source.section_title}</p>
+                              <p className="text-xs text-muted-foreground mt-1">§ {source.section_number}</p>
+                            </div>
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <BookmarkButton
+                                section={{
+                                  id: source.id,
+                                  standard: 'ISO_21502',
+                                  section_number: source.section_number,
+                                  section_title: source.section_title,
+                                  page_start: source.page_start,
+                                  page_end: source.page_end,
+                                  content: source.content_preview,
+                                  citation: source.citation,
+                                  relevance_score: source.relevance_score,
+                                }}
+                                from="comparison"
+                                size="sm"
+                              />
+                            </div>
                           </div>
                           <p className="text-xs text-muted-foreground/90 line-clamp-3 leading-relaxed">
                             {source.content_preview}
@@ -673,12 +731,31 @@ export function ComparePageStreaming() {
                 onClick={() => navigate(`/sections/${sectionData.sections.PMBOK!.id}`)}
               >
                 <CardHeader className="space-y-3 pb-4">
-                  <Badge
-                    variant="outline"
-                    className={`w-fit text-base px-3 py-1 ${getStandardBadgeColor("PMBOK")}`}
-                  >
-                    {getStandardDisplayName("PMBOK")}
-                  </Badge>
+                  <div className="flex items-center justify-between">
+                    <Badge
+                      variant="outline"
+                      className={`w-fit text-base px-3 py-1 ${getStandardBadgeColor("PMBOK")}`}
+                    >
+                      {getStandardDisplayName("PMBOK")}
+                    </Badge>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <BookmarkButton
+                        section={{
+                          id: sectionData.sections.PMBOK.id,
+                          standard: 'PMBOK',
+                          section_number: sectionData.sections.PMBOK.section_number,
+                          section_title: sectionData.sections.PMBOK.section_title,
+                          page_start: sectionData.sections.PMBOK.page_start,
+                          page_end: sectionData.sections.PMBOK.page_end,
+                          content: sectionData.sections.PMBOK.content,
+                          citation: sectionData.sections.PMBOK.citation,
+                          relevance_score: sectionData.sections.PMBOK.relevance_score,
+                        }}
+                        from="comparison"
+                        size="sm"
+                      />
+                    </div>
+                  </div>
                   <div>
                     <CardTitle className="text-lg leading-tight">{sectionData.sections.PMBOK.section_title}</CardTitle>
                     <p className="text-xs text-muted-foreground mt-1">§ {sectionData.sections.PMBOK.section_number}</p>
@@ -749,12 +826,31 @@ export function ComparePageStreaming() {
                 onClick={() => navigate(`/sections/${sectionData.sections.PRINCE2!.id}`)}
               >
                 <CardHeader className="space-y-3 pb-4">
-                  <Badge
-                    variant="outline"
-                    className={`w-fit text-base px-3 py-1 ${getStandardBadgeColor("PRINCE2")}`}
-                  >
-                    {getStandardDisplayName("PRINCE2")}
-                  </Badge>
+                  <div className="flex items-center justify-between">
+                    <Badge
+                      variant="outline"
+                      className={`w-fit text-base px-3 py-1 ${getStandardBadgeColor("PRINCE2")}`}
+                    >
+                      {getStandardDisplayName("PRINCE2")}
+                    </Badge>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <BookmarkButton
+                        section={{
+                          id: sectionData.sections.PRINCE2.id,
+                          standard: 'PRINCE2',
+                          section_number: sectionData.sections.PRINCE2.section_number,
+                          section_title: sectionData.sections.PRINCE2.section_title,
+                          page_start: sectionData.sections.PRINCE2.page_start,
+                          page_end: sectionData.sections.PRINCE2.page_end,
+                          content: sectionData.sections.PRINCE2.content,
+                          citation: sectionData.sections.PRINCE2.citation,
+                          relevance_score: sectionData.sections.PRINCE2.relevance_score,
+                        }}
+                        from="comparison"
+                        size="sm"
+                      />
+                    </div>
+                  </div>
                   <div>
                     <CardTitle className="text-lg leading-tight">{sectionData.sections.PRINCE2.section_title}</CardTitle>
                     <p className="text-xs text-muted-foreground mt-1">§ {sectionData.sections.PRINCE2.section_number}</p>
@@ -825,12 +921,31 @@ export function ComparePageStreaming() {
                 onClick={() => navigate(`/sections/${sectionData.sections.ISO_21502!.id}`)}
               >
                 <CardHeader className="space-y-3 pb-4">
-                  <Badge
-                    variant="outline"
-                    className={`w-fit text-base px-3 py-1 ${getStandardBadgeColor("ISO_21502")}`}
-                  >
-                    {getStandardDisplayName("ISO_21502")}
-                  </Badge>
+                  <div className="flex items-center justify-between">
+                    <Badge
+                      variant="outline"
+                      className={`w-fit text-base px-3 py-1 ${getStandardBadgeColor("ISO_21502")}`}
+                    >
+                      {getStandardDisplayName("ISO_21502")}
+                    </Badge>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <BookmarkButton
+                        section={{
+                          id: sectionData.sections.ISO_21502.id,
+                          standard: 'ISO_21502',
+                          section_number: sectionData.sections.ISO_21502.section_number,
+                          section_title: sectionData.sections.ISO_21502.section_title,
+                          page_start: sectionData.sections.ISO_21502.page_start,
+                          page_end: sectionData.sections.ISO_21502.page_end,
+                          content: sectionData.sections.ISO_21502.content,
+                          citation: sectionData.sections.ISO_21502.citation,
+                          relevance_score: sectionData.sections.ISO_21502.relevance_score,
+                        }}
+                        from="comparison"
+                        size="sm"
+                      />
+                    </div>
+                  </div>
                   <div>
                     <CardTitle className="text-lg leading-tight">{sectionData.sections.ISO_21502.section_title}</CardTitle>
                     <p className="text-xs text-muted-foreground mt-1">§ {sectionData.sections.ISO_21502.section_number}</p>

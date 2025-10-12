@@ -32,8 +32,18 @@ const STANDARD_COLORS: Record<StandardType, string> = {
 };
 
 // Section Node Component - Individual sections
-const SectionNode = memo(({ data }: { data: any }) => {
-  const color = STANDARD_COLORS[data.standard as StandardType];
+interface SectionNodeData {
+  label: string;
+  standard: StandardType;
+  section_number: string;
+  section_title: string;
+  cluster_id?: string;
+  page_start: number;
+  connectionCount?: number;
+}
+
+const SectionNode = memo(({ data }: { data: SectionNodeData }) => {
+  const color = STANDARD_COLORS[data.standard];
   
   return (
     <div
@@ -71,7 +81,17 @@ const SectionNode = memo(({ data }: { data: any }) => {
 SectionNode.displayName = 'SectionNode';
 
 // Cluster Node Component - Topic groups
-const ClusterNode = memo(({ data }: { data: any }) => {
+interface ClusterNodeData {
+  label: string;
+  name: string;
+  size: number;
+  standards: StandardType[];
+  color: string;
+  standard_counts?: Record<string, number>;
+  connectionCount?: number;
+}
+
+const ClusterNode = memo(({ data }: { data: ClusterNodeData }) => {
   const color = data.color || '#6b7280';
   const standardBadges = data.standards || [];
   
@@ -381,7 +401,7 @@ function createClusterLayout<T extends GraphNode | ClusterNode>(
     clusters.get(clusterId)!.push(node);
   });
 
-  const nodePositions: any[] = [];
+  const nodePositions: (T & { position: { x: number; y: number } })[] = [];
   
   // Layout parameters for sections
   const clusterSpacing = 400;
@@ -401,14 +421,14 @@ function createClusterLayout<T extends GraphNode | ClusterNode>(
     clusterNodes.forEach((node, idx) => {
       const row = Math.floor(idx / nodesPerRow);
       const col = idx % nodesPerRow;
-      
+
       nodePositions.push({
         ...node,
         position: {
           x: clusterX + col * nodeSpacing,
           y: clusterY + row * nodeSpacing,
         },
-      });
+      } as unknown as T & { position: { x: number; y: number } });
     });
     
     clusterIndex++;

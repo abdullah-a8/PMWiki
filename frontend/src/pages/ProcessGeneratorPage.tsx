@@ -244,7 +244,7 @@ export function ProcessGeneratorPage() {
                   <Label htmlFor="project_type">Project Type *</Label>
                   <Select
                     value={projectType}
-                    onValueChange={(value) => setValue("project_type", value as any)}
+                    onValueChange={(value) => setValue("project_type", value as FormData["project_type"])}
                   >
                     <SelectTrigger className="h-12">
                       <SelectValue placeholder="Select project type" />
@@ -293,7 +293,7 @@ export function ProcessGeneratorPage() {
                   </div>
                   <Select
                     value={projectSize}
-                    onValueChange={(value) => setValue("project_size", value as any)}
+                    onValueChange={(value) => setValue("project_size", value as FormData["project_size"])}
                   >
                     <SelectTrigger className="h-12">
                       <SelectValue placeholder="Select project size" />

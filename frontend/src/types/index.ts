@@ -48,9 +48,9 @@ export interface Section {
   citation_key: string
   citation_apa: string
   citation_ieee: string
-  parent_chain: any[]
+  parent_chain: Array<{ id: string; title: string; number: string }>
   child_count?: number
-  content_flags: Record<string, any>
+  content_flags: Record<string, boolean | string | number>
   created_at?: string
 }
 
@@ -144,4 +144,44 @@ export interface SectionsByTopicResponse {
     PRINCE2: SectionComparisonItem | null
     ISO_21502: SectionComparisonItem | null
   }
+}
+
+// ============================================================================
+// BOOKMARKS & USER DATA
+// ============================================================================
+
+export interface BookmarkItem {
+  id: string  // Section ID
+  type: 'section' | 'search-result' | 'comparison-source'
+
+  // Section metadata
+  standard: string
+  section_number: string
+  section_title: string
+  page_start?: number
+  page_end?: number
+
+  // Content preview
+  content_preview: string
+  citation: string
+
+  // Bookmark metadata
+  bookmarked_at: number
+  bookmarked_from: 'search' | 'comparison' | 'library' | 'section-detail'
+  relevance_score?: number
+
+  // Optional future enhancements
+  tags?: string[]
+  notes?: string
+}
+
+export interface SearchHistoryItem {
+  id: string
+  query: string
+  timestamp: number
+  primarySourcesCount: number
+  standards: string[]
+  primarySources?: SourceReference[]
+  additionalContext?: SourceReference[]
+  answer?: string
 }

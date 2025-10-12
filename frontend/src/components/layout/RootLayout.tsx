@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import { useState } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { Breadcrumbs } from "./Breadcrumbs";
+import { Toaster } from "sonner";
 
 export function RootLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -46,6 +47,7 @@ export function RootLayout() {
           <Outlet />
         </main>
       </div>
+      <Toaster position="top-right" />
     </div>
   );
 }

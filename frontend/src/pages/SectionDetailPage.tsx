@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { BookmarkButton } from "@/components/bookmarks/BookmarkButton";
 import { api } from "@/lib/api";
 import type { Section, StandardInfo } from "@/types";
 
@@ -99,17 +100,34 @@ export function SectionDetailPage() {
       <Card>
         <CardHeader className="space-y-4">
           <div className="flex items-center justify-between gap-4">
-            <Badge
-              variant="outline"
-              className={`w-fit ${getStandardBadgeColor(section.standard)}`}
-            >
-              {getStandardDisplayName(section.standard)}
-            </Badge>
-            {section.page_start && (
-              <Badge variant="secondary" className="text-xs">
-                Page {section.page_start}
+            <div className="flex items-center gap-3">
+              <Badge
+                variant="outline"
+                className={`w-fit ${getStandardBadgeColor(section.standard)}`}
+              >
+                {getStandardDisplayName(section.standard)}
               </Badge>
-            )}
+              {section.page_start && (
+                <Badge variant="secondary" className="text-xs">
+                  Page {section.page_start}
+                </Badge>
+              )}
+            </div>
+            <BookmarkButton
+              section={{
+                id: section.id,
+                standard: section.standard,
+                section_number: section.section_number,
+                section_title: section.section_title,
+                page_start: section.page_start,
+                page_end: section.page_end,
+                content: section.content,
+                citation: section.citation_apa,
+                relevance_score: 1.0,
+              }}
+              from="section-detail"
+              size="default"
+            />
           </div>
 
           <div>
@@ -126,25 +144,25 @@ export function SectionDetailPage() {
                 remarkPlugins={[remarkGfm]}
                 components={{
                   // Style headings
-                  h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
-                  h2: ({ node, ...props }) => <h2 className="text-xl font-bold mt-5 mb-3" {...props} />,
-                  h3: ({ node, ...props }) => <h3 className="text-lg font-semibold mt-4 mb-2" {...props} />,
-                  h4: ({ node, ...props }) => <h4 className="text-base font-semibold mt-3 mb-2" {...props} />,
+                  h1: (props) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
+                  h2: (props) => <h2 className="text-xl font-bold mt-5 mb-3" {...props} />,
+                  h3: (props) => <h3 className="text-lg font-semibold mt-4 mb-2" {...props} />,
+                  h4: (props) => <h4 className="text-base font-semibold mt-3 mb-2" {...props} />,
 
                   // Style paragraphs
-                  p: ({ node, ...props }) => <p className="text-base leading-relaxed mb-4" {...props} />,
+                  p: (props) => <p className="text-base leading-relaxed mb-4" {...props} />,
 
                   // Style lists
-                  ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-4 space-y-1" {...props} />,
-                  ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-4 space-y-1" {...props} />,
-                  li: ({ node, ...props }) => <li className="text-base leading-relaxed ml-4" {...props} />,
+                  ul: (props) => <ul className="list-disc list-inside mb-4 space-y-1" {...props} />,
+                  ol: (props) => <ol className="list-decimal list-inside mb-4 space-y-1" {...props} />,
+                  li: (props) => <li className="text-base leading-relaxed ml-4" {...props} />,
 
                   // Style emphasis
-                  strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
-                  em: ({ node, ...props }) => <em className="italic" {...props} />,
+                  strong: (props) => <strong className="font-semibold" {...props} />,
+                  em: (props) => <em className="italic" {...props} />,
 
                   // Style code blocks
-                  code: ({ node, className, children, ...props }) => {
+                  code: ({ className, children, ...props }) => {
                     const isInline = !className;
                     return isInline ? (
                       <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
@@ -158,12 +176,12 @@ export function SectionDetailPage() {
                   },
 
                   // Style blockquotes
-                  blockquote: ({ node, ...props }) => (
+                  blockquote: (props) => (
                     <blockquote className="border-l-4 border-muted-foreground/20 pl-4 italic my-4" {...props} />
                   ),
 
                   // Style horizontal rules
-                  hr: ({ node, ...props }) => <hr className="my-6 border-border" {...props} />,
+                  hr: (props) => <hr className="my-6 border-border" {...props} />,
                 }}
               >
                 {section.content}

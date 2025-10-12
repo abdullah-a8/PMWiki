@@ -7,7 +7,7 @@ import { GraphControls } from '@/components/graph/GraphControls';
 import { NodeDetailPanel } from '@/components/graph/NodeDetailPanel';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card } from '@/components/ui/card';
-import type { StandardType, ViewMode } from '@/types/graph';
+import type { StandardType, ViewMode, GraphNode, ClusterNode } from '@/types/graph';
 
 export function TopicGraphPage() {
   const [similarityThreshold, setSimilarityThreshold] = useState(0.6);
@@ -52,14 +52,14 @@ export function TopicGraphPage() {
           
           if (isCluster) {
             // For cluster nodes, search by name and standards
-            const clusterNode = node as any;
+            const clusterNode = node as ClusterNode;
             return (
               clusterNode.name.toLowerCase().includes(query) ||
               clusterNode.standards.some((std: string) => std.toLowerCase().includes(query))
             );
           } else {
             // For section nodes, search by title, number, and standard
-            const sectionNode = node as any;
+            const sectionNode = node as GraphNode;
             return (
               sectionNode.section_title.toLowerCase().includes(query) ||
               sectionNode.section_number.toLowerCase().includes(query) ||

@@ -9,7 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { searchHistoryStorage } from "@/lib/searchHistory";
+import { useSearchHistoryActions } from "@/stores/useUserDataStore";
+import { BookmarkButton } from "@/components/bookmarks/BookmarkButton";
 import { API_BASE_URL } from "@/lib/constants";
 
 interface SourceReference {
@@ -34,6 +35,7 @@ export function HomePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const previousQueryRef = useRef<string | null>(null);
+  const { addSearch, getSearchByQuery } = useSearchHistoryActions();
 
   // Streaming state
   const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +44,7 @@ export function HomePage() {
   const [primarySources, setPrimarySources] = useState<SourceReference[]>([]);
   const [additionalContext, setAdditionalContext] = useState<SourceReference[]>([]);
 
-  // Save to localStorage when search completes successfully
+  // Save to Zustand store when search completes successfully
   useEffect(() => {
     const query = searchParams.get("q");
     if (!isLoading && streamedAnswer && query && !isViewingHistory) {
@@ -50,19 +52,17 @@ export function HomePage() {
       const primarySourcesCount = primarySources?.length || 0;
       const standards = [...new Set(primarySources?.map(s => s.standard) || [])];
 
-      searchHistoryStorage.addSearch(
+      addSearch({
         query,
         primarySourcesCount,
         standards,
-        true,
         primarySources,
         additionalContext,
-        streamedAnswer
-      );
-      window.dispatchEvent(new Event('searchHistoryUpdated'));
+        answer: streamedAnswer,
+      });
       previousQueryRef.current = query;
     }
-  }, [isLoading, streamedAnswer, searchParams, isViewingHistory, primarySources, additionalContext]);
+  }, [isLoading, streamedAnswer, searchParams, isViewingHistory, primarySources, additionalContext, addSearch]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -82,7 +82,7 @@ export function HomePage() {
       setSearchQuery(query);
 
       // Check if navigation came from history click
-      const fromHistory = (location.state as any)?.fromHistory === true;
+      const fromHistory = (location.state as { fromHistory?: boolean })?.fromHistory === true;
 
       if (fromHistory) {
         // User clicked from sidebar - this is viewing history
@@ -157,7 +157,7 @@ export function HomePage() {
                 setError(event.message);
                 setIsLoading(false);
               }
-            } catch (e) {
+            } catch {
               // Silent fail for parse errors
             }
           }
@@ -196,11 +196,11 @@ export function HomePage() {
     if (!query) return;
 
     // Check if navigation came from history click
-    const fromHistory = (location.state as any)?.fromHistory === true;
+    const fromHistory = (location.state as { fromHistory?: boolean })?.fromHistory === true;
 
     if (fromHistory) {
       // ONLY load from cached history - NEVER trigger a backend request for history items
-      const cachedSearch = searchHistoryStorage.getSearchByQuery(query);
+      const cachedSearch = getSearchByQuery(query);
 
       if (cachedSearch && cachedSearch.answer && cachedSearch.primarySources) {
         // We have cached results - use them
@@ -210,7 +210,7 @@ export function HomePage() {
         setIsLoading(false);
         setError(null);
       } else {
-        // No cached results - this should never happen because getHistory() filters them out
+        // No cached results - this should never happen because validSearchHistory() filters them out
         // But if it does, show an error instead of making a backend request
         setError("This search is no longer available in history. Please search again.");
         setIsLoading(false);
@@ -223,7 +223,7 @@ export function HomePage() {
       performStreamingSearch(query);
       previousQueryRef.current = query;
     }
-  }, [searchParams, location.state]);
+  }, [searchParams, location.state, getSearchByQuery]);
 
   const getStandardDisplayName = (std: string) => {
     return std === "ISO_21502" ? "ISO 21502" : std;
@@ -248,7 +248,7 @@ export function HomePage() {
   const hasSearched = searchParams.get("q") !== null;
 
   return (
-    <div className="w-full">
+    <div className="w-full relative">
       {/* Initial centered search view */}
       {!hasSearched && (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)]">
@@ -382,12 +382,19 @@ export function HomePage() {
                     {primarySources.map((section, index) => (
                       <Card key={`${section.standard}-${section.section_number}-${index}`} className="flex flex-col">
                         <CardHeader>
-                          <Badge
-                            variant="outline"
-                            className={`w-fit ${getStandardBadgeColor(section.standard)}`}
-                          >
-                            {getStandardDisplayName(section.standard)}
-                          </Badge>
+                          <div className="flex items-center justify-between">
+                            <Badge
+                              variant="outline"
+                              className={`w-fit ${getStandardBadgeColor(section.standard)}`}
+                            >
+                              {getStandardDisplayName(section.standard)}
+                            </Badge>
+                            <BookmarkButton
+                              section={section}
+                              from="search"
+                              size="sm"
+                            />
+                          </div>
                           <CardTitle className="text-lg mt-2">{section.section_title}</CardTitle>
                           <CardDescription>Section {section.section_number}</CardDescription>
                         </CardHeader>
@@ -551,12 +558,19 @@ export function HomePage() {
                       {additionalContext.map((section, index) => (
                         <Card key={`${section.standard}-${section.section_number}-additional-${index}`}>
                           <CardHeader>
-                            <Badge
-                              variant="outline"
-                              className={`w-fit ${getStandardBadgeColor(section.standard)}`}
-                            >
-                              {getStandardDisplayName(section.standard)}
-                            </Badge>
+                            <div className="flex items-center justify-between">
+                              <Badge
+                                variant="outline"
+                                className={`w-fit ${getStandardBadgeColor(section.standard)}`}
+                              >
+                                {getStandardDisplayName(section.standard)}
+                              </Badge>
+                              <BookmarkButton
+                                section={section}
+                                from="search"
+                                size="sm"
+                              />
+                            </div>
                             <CardTitle className="text-base mt-2">{section.section_title}</CardTitle>
                             <CardDescription>Section {section.section_number}</CardDescription>
                           </CardHeader>
@@ -587,10 +601,10 @@ export function HomePage() {
 
       {/* Fixed Search Bar at Bottom - Only show when NOT viewing history and NOT loading */}
       {hasSearched && !isViewingHistory && !isLoading && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t p-4">
-          <div className="max-w-4xl mx-auto">
-            <form onSubmit={handleSearch} className="flex gap-2">
-              <div className="relative flex-1">
+        <div className="sticky bottom-[-16px] left-0 right-0 z-50 flex justify-center mt-6 pointer-events-none">
+          <div className="pointer-events-auto bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border shadow-lg rounded-2xl p-3">
+            <form onSubmit={handleSearch} className="flex gap-2 items-center">
+              <div className="relative w-[500px]">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="text"
@@ -611,10 +625,10 @@ export function HomePage() {
                   </Button>
                 )}
               </div>
-              <Button type="submit" className="rounded-full px-6">
+              <Button type="submit" className="rounded-full px-6 shrink-0">
                 Search
               </Button>
-              <Button type="button" variant="outline" className="rounded-full px-6" onClick={handleNewSearch}>
+              <Button type="button" variant="outline" className="rounded-full px-6 shrink-0" onClick={handleNewSearch}>
                 New
               </Button>
             </form>

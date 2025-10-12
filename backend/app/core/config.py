@@ -1,4 +1,6 @@
 from pydantic_settings import BaseSettings
+from pydantic import model_validator
+from typing_extensions import Self
 from typing import List
 import json
 import os
@@ -16,11 +18,16 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = "pmwiki"
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
+    
+    # Optional Database URLs (for backward compatibility)
+    SUPABASE_URL: str | None = None
+    LOCAL_DATABASE_URL: str | None = None
 
     # Vector Database
     QDRANT_HOST: str = "localhost"
     QDRANT_PORT: int = 6333
     QDRANT_COLLECTION_NAME: str = "pmwiki_embeddings"
+    QDRANT_API_KEY: str | None = None  # Optional for cloud Qdrant
 
     # API Keys
     GROQ_API_KEY: str
@@ -34,8 +41,28 @@ class Settings(BaseSettings):
     VOYAGE_RATE_LIMIT: int = 1000000  # tokens per month
 
     class Config:
-        env_file = ".env"  # Corrected path for env file
+        env_file = ".env"
         case_sensitive = True
+        extra = "ignore"  # Ignore extra fields in .env (Pydantic v2)
+
+    @model_validator(mode='after')
+    def validate_database_config(self) -> Self:
+        """Validate that either database URL or individual connection params are provided."""
+        has_url = self.SUPABASE_URL or self.LOCAL_DATABASE_URL
+        has_individual = all([
+            self.POSTGRES_USER,
+            self.POSTGRES_PASSWORD,
+            self.POSTGRES_DB,
+            self.POSTGRES_HOST
+        ])
+
+        if not (has_url or has_individual):
+            raise ValueError(
+                "Database configuration incomplete: Must provide either "
+                "SUPABASE_URL/LOCAL_DATABASE_URL or individual Postgres connection parameters "
+                "(POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, POSTGRES_HOST)"
+            )
+        return self
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

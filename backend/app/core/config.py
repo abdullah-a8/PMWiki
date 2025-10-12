@@ -48,10 +48,10 @@ class Settings(BaseSettings):
     @model_validator(mode='after')
     def validate_database_config(self) -> Self:
         """Validate that either database URL or individual connection params are provided."""
-        has_url = self.SUPABASE_URL or self.LOCAL_DATABASE_URL
+        has_url = self.SUPABASE_URL or self.LOCAL_DATABASE_URL or self.DATABASE_URL
         has_individual = all([
             self.POSTGRES_USER,
-            self.POSTGRES_PASSWORD,
+            self.POSTGRES_PASSWORD is not None and self.POSTGRES_PASSWORD != "",
             self.POSTGRES_DB,
             self.POSTGRES_HOST
         ])
@@ -59,7 +59,7 @@ class Settings(BaseSettings):
         if not (has_url or has_individual):
             raise ValueError(
                 "Database configuration incomplete: Must provide either "
-                "SUPABASE_URL/LOCAL_DATABASE_URL or individual Postgres connection parameters "
+                "DATABASE_URL/SUPABASE_URL/LOCAL_DATABASE_URL or individual Postgres connection parameters "
                 "(POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, POSTGRES_HOST)"
             )
         return self

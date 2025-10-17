@@ -43,6 +43,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { API_BASE_URL } from "@/lib/constants";
 import { toast } from "sonner";
+import { getToastStyles } from "@/lib/toast-styles";
 
 // Form validation schema
 const formSchema = z.object({
@@ -217,8 +218,12 @@ export function ProcessGeneratorPage() {
     // Clear any previous errors
     setError(null);
 
-    // Show success toast
-    toast.success(`${scenario.name} loaded successfully!`);
+    // Show success toast with custom styling
+    toast.success('Template Loaded', {
+      description: scenario.name,
+      unstyled: true,
+      classNames: getToastStyles('success'),
+    });
   };
 
   const onSubmit = async (data: FormData) => {
@@ -319,7 +324,7 @@ export function ProcessGeneratorPage() {
                     Select a Template Scenario
                   </Button>
                   <p className="text-xs text-muted-foreground text-center">
-                    Choose from Phase 2 scenarios or customize your own below
+                    Choose a preset template or customize your own below
                   </p>
                 </div>
 
@@ -799,15 +804,15 @@ export function ProcessGeneratorPage() {
 
       {/* Template Selection Dialog */}
       <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] w-[1400px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl">Select a Template Scenario</DialogTitle>
             <DialogDescription>
-              Choose one of the three required Phase 2 scenarios to instantly populate the form
+              Choose a preset template to quickly populate the form with predefined values
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3 mt-4">
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 mt-4">
             {/* Scenario 1: Software Development */}
             <Card
               className="hover:shadow-lg transition-all cursor-pointer flex flex-col border-blue-500/20 hover:border-blue-500/40"

@@ -428,7 +428,32 @@ Your role is to generate tailored, evidence-based project processes for specific
    - Show which elements came from PMBOK, PRINCE2, and ISO 21502
    - Be specific about what you borrowed from each
 
-5. **Output Format**:
+5. **Mermaid Diagram Generation**:
+   - Create a Mermaid.js flowchart (graph TD) visualizing the complete process flow
+   - Include ALL phases as nodes with clear transitions between them
+   - Add decision gates (diamond shapes) where approval/review points exist
+   - Show iterative loops where phases may repeat (e.g., design → review → design)
+   - Use proper Mermaid syntax for flowcharts:
+     * Standard nodes: `A[Phase Name]` (rectangular)
+     * Decision nodes: `B{Decision Point?}` (diamond)
+     * Arrows with labels: `A -->|Approved| B` or `A --> B`
+     * Start/End nodes: `Start([Project Start])` and `End([Project End])`
+   - **IMPORTANT**: Do NOT add any style directives (no `style` commands)
+   - **IMPORTANT**: Do NOT use colors, fills, or custom styling in the diagram
+   - Keep the diagram clean and minimal - only nodes, edges, and labels
+   - Example structure:
+   ```mermaid
+   graph TD
+       Start([Project Start]) --> A[Phase 1: Initiation]
+       A --> B[Phase 2: Planning]
+       B --> C{Review Gate}
+       C -->|Approved| D[Phase 3: Execution]
+       C -->|Rejected| B
+       D --> E[Phase 4: Closure]
+       E --> End([Project End])
+   ```
+
+6. **Output Format**:
    - Return a valid JSON object matching this structure:
    ```json
    {
@@ -456,15 +481,17 @@ Your role is to generate tailored, evidence-based project processes for specific
        "PMBOK": "How this process aligns with PMBOK",
        "PRINCE2": "How this process aligns with PRINCE2",
        "ISO_21502": "How this process aligns with ISO 21502"
-     }
+     },
+     "mermaid_diagram": "graph TD\\n    Start([Project Start]) --> A[Phase 1]\\n    A --> B[Phase 2]\\n    B --> End([Project End])"
    }
    ```
 
-6. **Critical Rules**:
+7. **Critical Rules**:
    - Only use information from provided context chunks
    - Always cite sources using exact section and page numbers
    - Be pragmatic - balance theory with practical implementation
-   - Never invent practices not supported by provided standards content"""
+   - Never invent practices not supported by provided standards content
+   - Ensure mermaid_diagram field contains valid Mermaid.js syntax"""
 
     def _build_process_user_prompt(
         self,

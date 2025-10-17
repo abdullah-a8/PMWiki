@@ -109,6 +109,10 @@ class ProcessGenerationResponse(BaseModel):
         ...,
         description="How this process aligns with each standard (PMBOK, PRINCE2, ISO_21502)"
     )
+    mermaid_diagram: Optional[str] = Field(
+        None,
+        description="Mermaid.js flowchart syntax representing the complete process flow with decision gates"
+    )
     usage_stats: dict = Field(..., description="LLM token usage statistics")
 
     model_config = {

@@ -111,8 +111,15 @@ async def generate_process(
             'key_recommendations': process_data.get('key_recommendations', []),
             'tailoring_rationale': process_data.get('tailoring_rationale', ''),
             'standards_alignment': process_data.get('standards_alignment', {}),
+            'mermaid_diagram': process_data.get('mermaid_diagram'),
             'usage_stats': result['usage_stats']
         }
+
+        # Log mermaid diagram status
+        if response.get('mermaid_diagram'):
+            logger.info(f"Mermaid diagram generated: {len(response['mermaid_diagram'])} characters")
+        else:
+            logger.warning("No mermaid diagram in LLM response")
 
         logger.info(f"Process generated successfully: {len(response['phases'])} phases, {len(response['key_recommendations'])} recommendations")
         return response

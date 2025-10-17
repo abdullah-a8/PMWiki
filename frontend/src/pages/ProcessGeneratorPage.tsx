@@ -29,7 +29,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   Select,
@@ -44,6 +44,7 @@ import remarkGfm from "remark-gfm";
 import { API_BASE_URL } from "@/lib/constants";
 import { toast } from "sonner";
 import { getToastStyles } from "@/lib/toast-styles";
+import { MermaidDiagram } from "@/components/MermaidDiagram";
 
 // Form validation schema
 const formSchema = z.object({
@@ -166,6 +167,7 @@ interface ProcessResponse {
     PRINCE2?: string;
     ISO_21502?: string;
   };
+  mermaid_diagram?: string;
   usage_stats: {
     model: string;
     tokens: {
@@ -564,6 +566,27 @@ export function ProcessGeneratorPage() {
             </CardContent>
           </Card>
 
+          {/* Process Flow Visualization */}
+          {result.mermaid_diagram && (
+            <Card className="border-indigo-500/30 shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-2xl flex items-center gap-2">
+                  <Workflow className="h-5 w-5 text-indigo-500" />
+                  Process Flow Visualization
+                </CardTitle>
+                <CardDescription>
+                  Visual representation of the complete process with decision gates and transitions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MermaidDiagram
+                  chart={result.mermaid_diagram}
+                  id="process-flow-diagram"
+                />
+              </CardContent>
+            </Card>
+          )}
+
           {/* Process Phases */}
           <div className="space-y-4">
             <div>
@@ -808,6 +831,9 @@ export function ProcessGeneratorPage() {
           <div className="p-6 pb-4 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-2xl">Select a Template Scenario</DialogTitle>
+              <DialogDescription>
+                Choose from preset project scenarios to quickly generate a tailored process
+              </DialogDescription>
             </DialogHeader>
           </div>
 

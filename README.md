@@ -2542,6 +2542,6 @@ This documentation provides a complete technical reference for developers, deplo
 
 **Project Status**: Both phases complete, production-ready, deployed on Railway
 
-**Live Application**: [https://pmwiki-production.up.railway.app](https://pmwiki-production.up.railway.app)
+**Live Application**: [https://pmwiki.up.railway.app](https://pmwiki.up.railway.app)
 
 **Last Updated**: October 17, 2025

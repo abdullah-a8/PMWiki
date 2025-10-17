@@ -92,6 +92,49 @@ const projectTypes = [
   { value: "other", label: "Other", icon: Briefcase },
 ];
 
+// Phase 2 Preset Scenarios
+const PRESET_SCENARIOS = {
+  software_dev: {
+    name: "Custom Software Development",
+    icon: Code,
+    description: "Small team, short duration, well-defined requirements",
+    data: {
+      project_type: "software_development" as const,
+      project_description: "Developing a mobile app with enterprise integration for a small team (<7 members) with well-defined requirements and tight deadlines (<6 months).",
+      project_size: "small" as const,
+      constraints: "tight deadline, limited budget, small team, fixed scope",
+      priorities: "speed, quality, user experience",
+      focus_areas: "risk management, change control, stakeholder engagement",
+    },
+  },
+  innovative_product: {
+    name: "Innovative Product Development",
+    icon: Package,
+    description: "R&D-heavy project with uncertain outcomes and evolving requirements",
+    data: {
+      project_type: "product_development" as const,
+      project_description: "R&D-heavy project developing an innovative IoT device with uncertain outcomes and evolving requirements over 12 months.",
+      project_size: "medium" as const,
+      constraints: "uncertain requirements, R&D focus, innovation risk, technology unknowns",
+      priorities: "innovation, adaptability, learning, stakeholder satisfaction",
+      focus_areas: "risk management, stakeholder engagement, quality assurance, change control",
+    },
+  },
+  government_project: {
+    name: "Large Government Project",
+    icon: Building2,
+    description: "Large-scale infrastructure with strong governance and regulatory compliance",
+    data: {
+      project_type: "infrastructure" as const,
+      project_description: "Large-scale government infrastructure project with civil, electrical, and IT components requiring strong governance and regulatory compliance over 24 months.",
+      project_size: "large" as const,
+      constraints: "regulatory compliance, procurement rules, strict governance, public accountability, budget oversight",
+      priorities: "compliance, transparency, stakeholder satisfaction, risk mitigation",
+      focus_areas: "risk management, quality assurance, stakeholder engagement, procurement management, governance",
+    },
+  },
+} as const;
+
 // Response types
 interface ProcessPhase {
   phase_name: string;
@@ -135,6 +178,7 @@ export function ProcessGeneratorPage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ProcessResponse | null>(null);
   const [copiedCitation, setCopiedCitation] = useState<string | null>(null);
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
   const {
     register,
@@ -152,6 +196,38 @@ export function ProcessGeneratorPage() {
 
   const projectType = watch("project_type");
   const projectSize = watch("project_size");
+
+  // Handle preset scenario selection
+  const handlePresetSelect = (scenarioKey: keyof typeof PRESET_SCENARIOS) => {
+    const scenario = PRESET_SCENARIOS[scenarioKey];
+
+    // Populate form fields with preset data
+    setValue("project_type", scenario.data.project_type);
+    setValue("project_description", scenario.data.project_description);
+    setValue("project_size", scenario.data.project_size);
+    setValue("constraints", scenario.data.constraints);
+    setValue("priorities", scenario.data.priorities);
+    setValue("focus_areas", scenario.data.focus_areas);
+
+    // Set selected preset for visual feedback
+    setSelectedPreset(scenarioKey);
+
+    // Clear any previous errors
+    setError(null);
+
+    // Smooth scroll to form
+    setTimeout(() => {
+      document.getElementById("process-form")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }, 100);
+
+    // Show success feedback briefly
+    setTimeout(() => {
+      setSelectedPreset(null);
+    }, 3000);
+  };
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
@@ -217,7 +293,7 @@ export function ProcessGeneratorPage() {
     <div className="w-full">
       {/* Initial centered form view */}
       {!hasGenerated && (
-        <div className="mx-auto max-w-3xl space-y-8 pb-12">
+        <div className="mx-auto max-w-6xl space-y-8 pb-12">
           {/* Header */}
           <div className="text-center space-y-3 mb-8">
             <div className="inline-flex items-center gap-2 mb-2">
@@ -229,8 +305,224 @@ export function ProcessGeneratorPage() {
             </p>
           </div>
 
+          {/* Preset Scenario Selector */}
+          <div className="space-y-4">
+            <div className="text-center space-y-2">
+              <h2 className="text-xl font-semibold">Quick Start: Select a Phase 2 Scenario</h2>
+              <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
+                Choose one of the three required Phase 2 scenarios to instantly populate the form, or create your own custom process below
+              </p>
+            </div>
+
+            {/* Success Notification */}
+            {selectedPreset && (
+              <Alert className="max-w-2xl mx-auto bg-green-500/10 border-green-500/20">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <AlertDescription className="text-green-600 dark:text-green-400">
+                  <strong>{PRESET_SCENARIOS[selectedPreset as keyof typeof PRESET_SCENARIOS].name}</strong> scenario loaded successfully!
+                  The form below has been populated with all scenario details.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
+              {/* Scenario 1: Software Development */}
+              <Card className={`hover:shadow-lg transition-all cursor-pointer flex flex-col border-blue-500/20 hover:border-blue-500/40 ${
+                selectedPreset === 'software_dev' ? 'ring-2 ring-blue-500 shadow-lg' : ''
+              }`}>
+                <CardHeader className="flex-1 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="p-3 bg-blue-500/10 rounded-lg">
+                      <Code className="h-6 w-6 text-blue-500" />
+                    </div>
+                    <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">
+                      Small
+                    </Badge>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CardTitle className="text-xl flex-1">Custom Software Development</CardTitle>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help shrink-0 mt-1" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="text-xs font-semibold mb-1">Lightweight Process</p>
+                        <p className="text-xs">Focuses on speed and flexibility with minimal documentation. Emphasizes iterative delivery and quick adaptation. Primarily draws from PMBOK's Agile practices.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <CardDescription className="text-sm leading-relaxed">
+                    Small team, short duration, well-defined requirements. Focus on speed and flexibility with minimal documentation.
+                  </CardDescription>
+                  <div className="pt-2 space-y-1.5 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-3.5 w-3.5" />
+                      <span>&lt;7 members, &lt;6 months</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      <span>Lightweight & Agile Process</span>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <Button
+                    variant={selectedPreset === 'software_dev' ? 'default' : 'outline'}
+                    className="w-full"
+                    type="button"
+                    onClick={() => handlePresetSelect('software_dev')}
+                  >
+                    {selectedPreset === 'software_dev' ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Scenario Loaded
+                      </>
+                    ) : (
+                      <>
+                        <Workflow className="h-4 w-4 mr-2" />
+                        Use This Scenario
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Scenario 2: Innovative Product */}
+              <Card className={`hover:shadow-lg transition-all cursor-pointer flex flex-col border-purple-500/20 hover:border-purple-500/40 ${
+                selectedPreset === 'innovative_product' ? 'ring-2 ring-purple-500 shadow-lg' : ''
+              }`}>
+                <CardHeader className="flex-1 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="p-3 bg-purple-500/10 rounded-lg">
+                      <Package className="h-6 w-6 text-purple-500" />
+                    </div>
+                    <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500/20">
+                      Medium
+                    </Badge>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CardTitle className="text-xl flex-1">Innovative Product Development</CardTitle>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help shrink-0 mt-1" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="text-xs font-semibold mb-1">Hybrid/Adaptive Process</p>
+                        <p className="text-xs">Balances innovation with control by combining agile iterations with structured stage-gates. Draws from PRINCE2's governance and PMBOK's adaptive approaches.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <CardDescription className="text-sm leading-relaxed">
+                    R&amp;D-heavy project with uncertain outcomes and evolving requirements. Hybrid approach balancing innovation with control.
+                  </CardDescription>
+                  <div className="pt-2 space-y-1.5 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <FlaskConical className="h-3.5 w-3.5" />
+                      <span>~12 months, R&amp;D focused</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      <span>Hybrid/Adaptive Process</span>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <Button
+                    variant={selectedPreset === 'innovative_product' ? 'default' : 'outline'}
+                    className="w-full"
+                    type="button"
+                    onClick={() => handlePresetSelect('innovative_product')}
+                  >
+                    {selectedPreset === 'innovative_product' ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Scenario Loaded
+                      </>
+                    ) : (
+                      <>
+                        <Workflow className="h-4 w-4 mr-2" />
+                        Use This Scenario
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Scenario 3: Government Project */}
+              <Card className={`hover:shadow-lg transition-all cursor-pointer flex flex-col border-teal-500/20 hover:border-teal-500/40 ${
+                selectedPreset === 'government_project' ? 'ring-2 ring-teal-500 shadow-lg' : ''
+              }`}>
+                <CardHeader className="flex-1 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="p-3 bg-teal-500/10 rounded-lg">
+                      <Building2 className="h-6 w-6 text-teal-500" />
+                    </div>
+                    <Badge variant="outline" className="bg-teal-500/10 text-teal-500 border-teal-500/20">
+                      Large
+                    </Badge>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CardTitle className="text-xl flex-1">Large Government Project</CardTitle>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help shrink-0 mt-1" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="text-xs font-semibold mb-1">Formal & Comprehensive Process</p>
+                        <p className="text-xs">Strong governance emphasizing compliance, transparency, and stakeholder management. Heavily draws from PRINCE2's governance structure and ISO 21502 standards.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <CardDescription className="text-sm leading-relaxed">
+                    Large-scale infrastructure with strong governance and regulatory compliance. Formal, comprehensive process.
+                  </CardDescription>
+                  <div className="pt-2 space-y-1.5 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Hammer className="h-3.5 w-3.5" />
+                      <span>24 months, Multi-discipline</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      <span>Formal & Comprehensive</span>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <Button
+                    variant={selectedPreset === 'government_project' ? 'default' : 'outline'}
+                    className="w-full"
+                    type="button"
+                    onClick={() => handlePresetSelect('government_project')}
+                  >
+                    {selectedPreset === 'government_project' ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Scenario Loaded
+                      </>
+                    ) : (
+                      <>
+                        <Workflow className="h-4 w-4 mr-2" />
+                        Use This Scenario
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Divider with text */}
+            <div className="relative py-4">
+              <div className="absolute inset-0 flex items-center">
+                <Separator className="w-full" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or customize your own</span>
+              </div>
+            </div>
+          </div>
+
           {/* Form Card */}
-          <Card className="border-primary/20 shadow-sm">
+          <Card className="border-primary/20 shadow-sm max-w-3xl mx-auto" id="process-form">
             <CardHeader>
               <CardTitle>Project Scenario</CardTitle>
               <CardDescription>

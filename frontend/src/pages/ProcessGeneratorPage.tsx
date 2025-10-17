@@ -804,21 +804,24 @@ export function ProcessGeneratorPage() {
 
       {/* Template Selection Dialog */}
       <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
-        <DialogContent className="max-w-[95vw] w-[1400px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">Select a Template Scenario</DialogTitle>
-            <DialogDescription>
-              Choose a preset template to quickly populate the form with predefined values
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="!w-[90vw] !max-w-[1400px] max-h-[90vh] p-0 gap-0 overflow-hidden flex flex-col">
+          <div className="p-6 pb-4 flex-shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">Select a Template Scenario</DialogTitle>
+              <DialogDescription>
+                Choose one of the three required Phase 2 scenarios to instantly populate the form
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
-          <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 mt-4">
-            {/* Scenario 1: Software Development */}
-            <Card
-              className="hover:shadow-lg transition-all cursor-pointer flex flex-col border-blue-500/20 hover:border-blue-500/40"
-              onClick={() => handlePresetSelect('software_dev')}
-            >
-              <CardHeader className="flex-1 space-y-3">
+          <div className="overflow-y-auto overflow-x-hidden px-8 pb-6 flex-1">
+            <div className="grid gap-8 grid-cols-1 lg:grid-cols-3 auto-rows-fr">
+              {/* Scenario 1: Software Development */}
+              <Card
+                className="hover:shadow-lg transition-all cursor-pointer flex flex-col w-full border-blue-500/20 hover:border-blue-500/40"
+                onClick={() => handlePresetSelect('software_dev')}
+              >
+              <CardHeader className="space-y-3.5 pb-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="p-3 bg-blue-500/10 rounded-lg">
                     <Code className="h-6 w-6 text-blue-500" />
@@ -853,7 +856,7 @@ export function ProcessGeneratorPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="pt-0">
+              <CardContent className="pt-0 mt-auto pb-6">
                 <Button
                   variant="outline"
                   className="w-full"
@@ -867,10 +870,10 @@ export function ProcessGeneratorPage() {
 
             {/* Scenario 2: Innovative Product */}
             <Card
-              className="hover:shadow-lg transition-all cursor-pointer flex flex-col border-purple-500/20 hover:border-purple-500/40"
+              className="hover:shadow-lg transition-all cursor-pointer flex flex-col w-full border-purple-500/20 hover:border-purple-500/40"
               onClick={() => handlePresetSelect('innovative_product')}
             >
-              <CardHeader className="flex-1 space-y-3">
+              <CardHeader className="space-y-3.5 pb-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="p-3 bg-purple-500/10 rounded-lg">
                     <Package className="h-6 w-6 text-purple-500" />
@@ -905,7 +908,7 @@ export function ProcessGeneratorPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="pt-0">
+              <CardContent className="pt-0 mt-auto pb-6">
                 <Button
                   variant="outline"
                   className="w-full"
@@ -919,10 +922,10 @@ export function ProcessGeneratorPage() {
 
             {/* Scenario 3: Government Project */}
             <Card
-              className="hover:shadow-lg transition-all cursor-pointer flex flex-col border-teal-500/20 hover:border-teal-500/40"
+              className="hover:shadow-lg transition-all cursor-pointer flex flex-col w-full border-teal-500/20 hover:border-teal-500/40"
               onClick={() => handlePresetSelect('government_project')}
             >
-              <CardHeader className="flex-1 space-y-3">
+              <CardHeader className="space-y-3.5 pb-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="p-3 bg-teal-500/10 rounded-lg">
                     <Building2 className="h-6 w-6 text-teal-500" />
@@ -957,7 +960,7 @@ export function ProcessGeneratorPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="pt-0">
+              <CardContent className="pt-0 mt-auto pb-6">
                 <Button
                   variant="outline"
                   className="w-full"
@@ -968,6 +971,7 @@ export function ProcessGeneratorPage() {
                 </Button>
               </CardContent>
             </Card>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

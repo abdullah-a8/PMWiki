@@ -63,7 +63,7 @@ export function AppSidebar({ isCollapsed, onToggle }: AppSidebarProps) {
     ISO_21502: false,
   });
 
-  const [isBookmarksSectionCollapsed, setIsBookmarksSectionCollapsed] = useState(false);
+  const [isBookmarksSectionCollapsed, setIsBookmarksSectionCollapsed] = useState(true);
   const [showClearBookmarksDialog, setShowClearBookmarksDialog] = useState(false);
   const [showClearHistoryDialog, setShowClearHistoryDialog] = useState(false);
 

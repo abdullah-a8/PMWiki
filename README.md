@@ -34,8 +34,6 @@ PMWiki is a production-ready citation-focused Retrieval-Augmented Generation (RA
 - **Phase 1** (Standards Repository & Comparison): **100% Complete** ✅
 - **Phase 2** (Tailored Process Design): **100% Complete** ✅
 
-**Live Application**: [https://pmwiki-production.up.railway.app](https://pmwiki-production.up.railway.app)
-
 ### Features
 
 **Semantic Search & RAG**

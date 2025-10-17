@@ -29,6 +29,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   Select,
@@ -41,6 +42,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { API_BASE_URL } from "@/lib/constants";
+import { toast } from "sonner";
 
 // Form validation schema
 const formSchema = z.object({
@@ -178,7 +180,7 @@ export function ProcessGeneratorPage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ProcessResponse | null>(null);
   const [copiedCitation, setCopiedCitation] = useState<string | null>(null);
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
 
   const {
     register,
@@ -209,24 +211,14 @@ export function ProcessGeneratorPage() {
     setValue("priorities", scenario.data.priorities);
     setValue("focus_areas", scenario.data.focus_areas);
 
-    // Set selected preset for visual feedback
-    setSelectedPreset(scenarioKey);
+    // Close the dialog
+    setIsTemplateDialogOpen(false);
 
     // Clear any previous errors
     setError(null);
 
-    // Smooth scroll to form
-    setTimeout(() => {
-      document.getElementById("process-form")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-    }, 100);
-
-    // Show success feedback briefly
-    setTimeout(() => {
-      setSelectedPreset(null);
-    }, 3000);
+    // Show success toast
+    toast.success(`${scenario.name} loaded successfully!`);
   };
 
   const onSubmit = async (data: FormData) => {
@@ -305,222 +297,6 @@ export function ProcessGeneratorPage() {
             </p>
           </div>
 
-          {/* Preset Scenario Selector */}
-          <div className="space-y-4">
-            <div className="text-center space-y-2">
-              <h2 className="text-xl font-semibold">Quick Start: Select a Phase 2 Scenario</h2>
-              <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
-                Choose one of the three required Phase 2 scenarios to instantly populate the form, or create your own custom process below
-              </p>
-            </div>
-
-            {/* Success Notification */}
-            {selectedPreset && (
-              <Alert className="max-w-2xl mx-auto bg-green-500/10 border-green-500/20">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <AlertDescription className="text-green-600 dark:text-green-400">
-                  <strong>{PRESET_SCENARIOS[selectedPreset as keyof typeof PRESET_SCENARIOS].name}</strong> scenario loaded successfully!
-                  The form below has been populated with all scenario details.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
-              {/* Scenario 1: Software Development */}
-              <Card className={`hover:shadow-lg transition-all cursor-pointer flex flex-col border-blue-500/20 hover:border-blue-500/40 ${
-                selectedPreset === 'software_dev' ? 'ring-2 ring-blue-500 shadow-lg' : ''
-              }`}>
-                <CardHeader className="flex-1 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="p-3 bg-blue-500/10 rounded-lg">
-                      <Code className="h-6 w-6 text-blue-500" />
-                    </div>
-                    <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">
-                      Small
-                    </Badge>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CardTitle className="text-xl flex-1">Custom Software Development</CardTitle>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help shrink-0 mt-1" />
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs">
-                        <p className="text-xs font-semibold mb-1">Lightweight Process</p>
-                        <p className="text-xs">Focuses on speed and flexibility with minimal documentation. Emphasizes iterative delivery and quick adaptation. Primarily draws from PMBOK's Agile practices.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <CardDescription className="text-sm leading-relaxed">
-                    Small team, short duration, well-defined requirements. Focus on speed and flexibility with minimal documentation.
-                  </CardDescription>
-                  <div className="pt-2 space-y-1.5 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-3.5 w-3.5" />
-                      <span>&lt;7 members, &lt;6 months</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      <span>Lightweight & Agile Process</span>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <Button
-                    variant={selectedPreset === 'software_dev' ? 'default' : 'outline'}
-                    className="w-full"
-                    type="button"
-                    onClick={() => handlePresetSelect('software_dev')}
-                  >
-                    {selectedPreset === 'software_dev' ? (
-                      <>
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                        Scenario Loaded
-                      </>
-                    ) : (
-                      <>
-                        <Workflow className="h-4 w-4 mr-2" />
-                        Use This Scenario
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Scenario 2: Innovative Product */}
-              <Card className={`hover:shadow-lg transition-all cursor-pointer flex flex-col border-purple-500/20 hover:border-purple-500/40 ${
-                selectedPreset === 'innovative_product' ? 'ring-2 ring-purple-500 shadow-lg' : ''
-              }`}>
-                <CardHeader className="flex-1 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="p-3 bg-purple-500/10 rounded-lg">
-                      <Package className="h-6 w-6 text-purple-500" />
-                    </div>
-                    <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500/20">
-                      Medium
-                    </Badge>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CardTitle className="text-xl flex-1">Innovative Product Development</CardTitle>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help shrink-0 mt-1" />
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs">
-                        <p className="text-xs font-semibold mb-1">Hybrid/Adaptive Process</p>
-                        <p className="text-xs">Balances innovation with control by combining agile iterations with structured stage-gates. Draws from PRINCE2's governance and PMBOK's adaptive approaches.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <CardDescription className="text-sm leading-relaxed">
-                    R&amp;D-heavy project with uncertain outcomes and evolving requirements. Hybrid approach balancing innovation with control.
-                  </CardDescription>
-                  <div className="pt-2 space-y-1.5 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <FlaskConical className="h-3.5 w-3.5" />
-                      <span>~12 months, R&amp;D focused</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      <span>Hybrid/Adaptive Process</span>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <Button
-                    variant={selectedPreset === 'innovative_product' ? 'default' : 'outline'}
-                    className="w-full"
-                    type="button"
-                    onClick={() => handlePresetSelect('innovative_product')}
-                  >
-                    {selectedPreset === 'innovative_product' ? (
-                      <>
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                        Scenario Loaded
-                      </>
-                    ) : (
-                      <>
-                        <Workflow className="h-4 w-4 mr-2" />
-                        Use This Scenario
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Scenario 3: Government Project */}
-              <Card className={`hover:shadow-lg transition-all cursor-pointer flex flex-col border-teal-500/20 hover:border-teal-500/40 ${
-                selectedPreset === 'government_project' ? 'ring-2 ring-teal-500 shadow-lg' : ''
-              }`}>
-                <CardHeader className="flex-1 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="p-3 bg-teal-500/10 rounded-lg">
-                      <Building2 className="h-6 w-6 text-teal-500" />
-                    </div>
-                    <Badge variant="outline" className="bg-teal-500/10 text-teal-500 border-teal-500/20">
-                      Large
-                    </Badge>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CardTitle className="text-xl flex-1">Large Government Project</CardTitle>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help shrink-0 mt-1" />
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs">
-                        <p className="text-xs font-semibold mb-1">Formal & Comprehensive Process</p>
-                        <p className="text-xs">Strong governance emphasizing compliance, transparency, and stakeholder management. Heavily draws from PRINCE2's governance structure and ISO 21502 standards.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <CardDescription className="text-sm leading-relaxed">
-                    Large-scale infrastructure with strong governance and regulatory compliance. Formal, comprehensive process.
-                  </CardDescription>
-                  <div className="pt-2 space-y-1.5 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Hammer className="h-3.5 w-3.5" />
-                      <span>24 months, Multi-discipline</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      <span>Formal & Comprehensive</span>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <Button
-                    variant={selectedPreset === 'government_project' ? 'default' : 'outline'}
-                    className="w-full"
-                    type="button"
-                    onClick={() => handlePresetSelect('government_project')}
-                  >
-                    {selectedPreset === 'government_project' ? (
-                      <>
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                        Scenario Loaded
-                      </>
-                    ) : (
-                      <>
-                        <Workflow className="h-4 w-4 mr-2" />
-                        Use This Scenario
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Divider with text */}
-            <div className="relative py-4">
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or customize your own</span>
-              </div>
-            </div>
-          </div>
-
           {/* Form Card */}
           <Card className="border-primary/20 shadow-sm max-w-3xl mx-auto" id="process-form">
             <CardHeader>
@@ -531,6 +307,24 @@ export function ProcessGeneratorPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                {/* Select Template Button */}
+                <div className="space-y-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-12 text-base border-dashed border-2 hover:bg-primary/5"
+                    onClick={() => setIsTemplateDialogOpen(true)}
+                  >
+                    <Workflow className="mr-2 h-5 w-5" />
+                    Select a Template Scenario
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Choose from Phase 2 scenarios or customize your own below
+                  </p>
+                </div>
+
+                <Separator />
+
                 {/* Project Type */}
                 <div className="space-y-2">
                   <Label htmlFor="project_type">Project Type *</Label>
@@ -1000,24 +794,178 @@ export function ProcessGeneratorPage() {
               )}
             </div>
           </div>
-
-          {/* Usage Stats */}
-          {result.usage_stats && (
-            <Card className="bg-muted/30">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    Generated using {result.usage_stats.model}
-                  </span>
-                  <Badge variant="secondary">
-                    {result.usage_stats.tokens.total_tokens.toLocaleString()} tokens
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       )}
+
+      {/* Template Selection Dialog */}
+      <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Select a Template Scenario</DialogTitle>
+            <DialogDescription>
+              Choose one of the three required Phase 2 scenarios to instantly populate the form
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3 mt-4">
+            {/* Scenario 1: Software Development */}
+            <Card
+              className="hover:shadow-lg transition-all cursor-pointer flex flex-col border-blue-500/20 hover:border-blue-500/40"
+              onClick={() => handlePresetSelect('software_dev')}
+            >
+              <CardHeader className="flex-1 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="p-3 bg-blue-500/10 rounded-lg">
+                    <Code className="h-6 w-6 text-blue-500" />
+                  </div>
+                  <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">
+                    Small
+                  </Badge>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CardTitle className="text-xl flex-1">Custom Software Development</CardTitle>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help shrink-0 mt-1" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <p className="text-xs font-semibold mb-1">Lightweight Process</p>
+                      <p className="text-xs">Focuses on speed and flexibility with minimal documentation. Emphasizes iterative delivery and quick adaptation. Primarily draws from PMBOK's Agile practices.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <CardDescription className="text-sm leading-relaxed">
+                  Small team, short duration, well-defined requirements. Focus on speed and flexibility with minimal documentation.
+                </CardDescription>
+                <div className="pt-2 space-y-1.5 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-3.5 w-3.5" />
+                    <span>&lt;7 members, &lt;6 months</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>Lightweight & Agile Process</span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  type="button"
+                >
+                  <Workflow className="h-4 w-4 mr-2" />
+                  Use This Scenario
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Scenario 2: Innovative Product */}
+            <Card
+              className="hover:shadow-lg transition-all cursor-pointer flex flex-col border-purple-500/20 hover:border-purple-500/40"
+              onClick={() => handlePresetSelect('innovative_product')}
+            >
+              <CardHeader className="flex-1 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="p-3 bg-purple-500/10 rounded-lg">
+                    <Package className="h-6 w-6 text-purple-500" />
+                  </div>
+                  <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500/20">
+                    Medium
+                  </Badge>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CardTitle className="text-xl flex-1">Innovative Product Development</CardTitle>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help shrink-0 mt-1" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <p className="text-xs font-semibold mb-1">Hybrid/Adaptive Process</p>
+                      <p className="text-xs">Balances innovation with control by combining agile iterations with structured stage-gates. Draws from PRINCE2's governance and PMBOK's adaptive approaches.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <CardDescription className="text-sm leading-relaxed">
+                  R&amp;D-heavy project with uncertain outcomes and evolving requirements. Hybrid approach balancing innovation with control.
+                </CardDescription>
+                <div className="pt-2 space-y-1.5 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <FlaskConical className="h-3.5 w-3.5" />
+                    <span>~12 months, R&amp;D focused</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>Hybrid/Adaptive Process</span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  type="button"
+                >
+                  <Workflow className="h-4 w-4 mr-2" />
+                  Use This Scenario
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Scenario 3: Government Project */}
+            <Card
+              className="hover:shadow-lg transition-all cursor-pointer flex flex-col border-teal-500/20 hover:border-teal-500/40"
+              onClick={() => handlePresetSelect('government_project')}
+            >
+              <CardHeader className="flex-1 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="p-3 bg-teal-500/10 rounded-lg">
+                    <Building2 className="h-6 w-6 text-teal-500" />
+                  </div>
+                  <Badge variant="outline" className="bg-teal-500/10 text-teal-500 border-teal-500/20">
+                    Large
+                  </Badge>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CardTitle className="text-xl flex-1">Large Government Project</CardTitle>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help shrink-0 mt-1" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <p className="text-xs font-semibold mb-1">Formal & Comprehensive Process</p>
+                      <p className="text-xs">Strong governance emphasizing compliance, transparency, and stakeholder management. Heavily draws from PRINCE2's governance structure and ISO 21502 standards.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <CardDescription className="text-sm leading-relaxed">
+                  Large-scale infrastructure with strong governance and regulatory compliance. Formal, comprehensive process.
+                </CardDescription>
+                <div className="pt-2 space-y-1.5 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Hammer className="h-3.5 w-3.5" />
+                    <span>24 months, Multi-discipline</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>Formal & Comprehensive</span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  type="button"
+                >
+                  <Workflow className="h-4 w-4 mr-2" />
+                  Use This Scenario
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

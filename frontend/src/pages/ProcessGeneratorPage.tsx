@@ -29,7 +29,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   Select,
@@ -808,9 +808,6 @@ export function ProcessGeneratorPage() {
           <div className="p-6 pb-4 flex-shrink-0">
             <DialogHeader>
               <DialogTitle className="text-2xl">Select a Template Scenario</DialogTitle>
-              <DialogDescription>
-                Choose one of the three required Phase 2 scenarios to instantly populate the form
-              </DialogDescription>
             </DialogHeader>
           </div>
 

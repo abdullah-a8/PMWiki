@@ -22,6 +22,7 @@ from app.services.voyage_service import get_voyage_service
 from app.services.groq_service import get_groq_service
 from app.db.database import get_db
 from app.models.document_section import CitationFormat
+from app.utils.content import construct_image_urls
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -200,6 +201,9 @@ async def semantic_search_stream(
                     page_ref = f"pp. {chunk['page_start']}-{chunk['page_end']}"
                 citation = f"{std} ({year}), Section {chunk['section_number']}, {page_ref}"
 
+                # Transform image URLs
+                content = construct_image_urls(chunk['content']) if chunk.get('content') else chunk['content']
+
                 return {
                     'id': chunk['id'],
                     'standard': chunk['standard'],
@@ -207,7 +211,7 @@ async def semantic_search_stream(
                     'section_title': chunk['section_title'],
                     'page_start': chunk['page_start'],
                     'page_end': chunk.get('page_end'),
-                    'content': chunk['content'],
+                    'content': content,
                     'citation': citation,
                     'relevance_score': chunk['score']
                 }
@@ -379,6 +383,10 @@ async def get_section(
 
         # Convert to dict
         section = dict(result._mapping)
+
+        # Transform image URLs (convert relative paths to absolute URLs)
+        if section.get('content'):
+            section['content'] = construct_image_urls(section['content'])
 
         # Generate citations
         year_map = {
@@ -607,13 +615,16 @@ async def search_within_standard(
 
             citation = f"{standard} ({year}), Section {section_number}, {page_ref}"
 
+            # Transform image URLs
+            transformed_content = construct_image_urls(content) if content else content
+
             results.append({
                 "standard": standard,
                 "section_number": section_number,
                 "section_title": section_title,
                 "page_start": page_start,
                 "page_end": page_end,
-                "content": content,
+                "content": transformed_content,
                 "citation": citation,
                 "relevance_score": scores.get(section_id, 0.0)
             })

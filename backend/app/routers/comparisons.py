@@ -24,6 +24,7 @@ from app.services.groq_service import get_groq_service
 from app.services.qdrant_service import get_qdrant_service
 from app.services.voyage_service import get_voyage_service
 from app.db.database import get_db
+from app.utils.content import construct_image_urls
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -188,7 +189,10 @@ async def compare_topic_stream(
                         page_ref = f"pp. {chunk['page_start']}-{chunk['page_end']}"
 
                     citation = f"{std} ({year}), Section {chunk['section_number']}, {page_ref}"
-                    content_preview = chunk['content'][:200] + '...' if len(chunk['content']) > 200 else chunk['content']
+
+                    # Transform image URLs
+                    transformed_content = construct_image_urls(chunk['content']) if chunk.get('content') else chunk['content']
+                    content_preview = transformed_content[:200] + '...' if len(transformed_content) > 200 else transformed_content
 
                     sources[standard].append({
                         'id': chunk['id'],
@@ -341,6 +345,9 @@ async def get_sections_by_topic(
 
                 citation = f"{std} ({year}), Section {row[2]}, {page_ref}"
 
+                # Transform image URLs
+                transformed_content = construct_image_urls(row[6]) if row[6] else row[6]
+
                 all_sections[standard] = {
                     "id": row[0],
                     "standard": std,
@@ -348,7 +355,7 @@ async def get_sections_by_topic(
                     "section_title": row[3],
                     "page_start": row[4],
                     "page_end": row[5],
-                    "content": row[6],
+                    "content": transformed_content,
                     "citation": citation,
                     "relevance_score": relevance_score
                 }
@@ -434,6 +441,9 @@ async def compare_sections(
 
             citation = f"{standard} ({year}), Section {row[2]}, {page_ref}"
 
+            # Transform image URLs
+            transformed_content = construct_image_urls(row[6]) if row[6] else row[6]
+
             sections.append({
                 "id": row[0],
                 "standard": standard,
@@ -441,7 +451,7 @@ async def compare_sections(
                 "section_title": row[3],
                 "page_start": row[4],
                 "page_end": row[5],
-                "content": row[6],
+                "content": transformed_content,
                 "citation": citation
             })
 
@@ -628,7 +638,10 @@ async def find_similar_sections(
                     page_ref = f"pp. {row[4]}-{row[5]}"
 
                 citation = f"{standard} ({year}), Section {row[2]}, {page_ref}"
-                content_preview = row[6][:200] + "..." if len(row[6]) > 200 else row[6]
+
+                # Transform image URLs
+                transformed_content = construct_image_urls(row[6]) if row[6] else row[6]
+                content_preview = transformed_content[:200] + "..." if len(transformed_content) > 200 else transformed_content
 
                 formatted_similar.append({
                     "id": section_id_str,

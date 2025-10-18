@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     GROQ_RATE_LIMIT: int = 1000  # requests per day
     VOYAGE_RATE_LIMIT: int = 1000000  # tokens per month
 
+    # Image Storage - PMBOK Images
+    # Base URL for PMBOK images stored in Supabase storage
+    PMBOK_IMAGE_BASE_URL: str = "https://agauiufropfnyvaqqmyx.supabase.co/storage/v1/object/public/pmwiki_images/pmbok_images/"
+
     class Config:
         env_file = ".env"
         case_sensitive = True

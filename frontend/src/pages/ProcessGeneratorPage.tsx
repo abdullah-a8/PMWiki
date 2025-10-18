@@ -41,6 +41,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { API_BASE_URL } from "@/lib/constants";
 import { toast } from "sonner";
 import { getToastStyles } from "@/lib/toast-styles";
@@ -559,7 +560,7 @@ export function ProcessGeneratorPage() {
             </CardHeader>
             <CardContent>
               <div className="prose prose-zinc dark:prose-invert max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                   {result.overview}
                 </ReactMarkdown>
               </div>
@@ -738,7 +739,7 @@ export function ProcessGeneratorPage() {
             </CardHeader>
             <CardContent>
               <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                   {result.tailoring_rationale}
                 </ReactMarkdown>
               </div>

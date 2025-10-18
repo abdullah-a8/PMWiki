@@ -18,6 +18,7 @@ import { API_BASE_URL } from "@/lib/constants";
 import type { SectionsByTopicResponse } from "@/types";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 interface ComparisonSource {
   id: string;
@@ -373,6 +374,7 @@ export function ComparePageStreaming() {
               <div className="prose prose-zinc dark:prose-invert max-w-none">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw]}
                   components={{
                     h1: ({ children }) => (
                       <h1 className="text-2xl font-bold mt-6 mb-4 first:mt-0 text-foreground">{children}</h1>
@@ -770,6 +772,7 @@ export function ComparePageStreaming() {
                     <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeRaw]}
                         components={{
                           p: ({ children }) => (
                             <p className="mb-3 leading-relaxed text-sm text-foreground/90">{children}</p>
@@ -865,6 +868,7 @@ export function ComparePageStreaming() {
                     <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeRaw]}
                         components={{
                           p: ({ children }) => (
                             <p className="mb-3 leading-relaxed text-sm text-foreground/90">{children}</p>
@@ -960,6 +964,7 @@ export function ComparePageStreaming() {
                     <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeRaw]}
                         components={{
                           p: ({ children }) => (
                             <p className="mb-3 leading-relaxed text-sm text-foreground/90">{children}</p>

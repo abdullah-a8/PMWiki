@@ -4,6 +4,7 @@ import { ArrowLeft, Copy, Check, Loader2, ChevronLeft, ChevronRight } from "luci
 import { useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -142,6 +143,7 @@ export function SectionDetailPage() {
           <div className="prose prose-zinc dark:prose-invert max-w-none">
               <Markdown
                 remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw]}
                 components={{
                   // Style headings
                   h1: (props) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
@@ -182,6 +184,18 @@ export function SectionDetailPage() {
 
                   // Style horizontal rules
                   hr: (props) => <hr className="my-6 border-border" {...props} />,
+
+                  // Style tables
+                  table: (props) => (
+                    <div className="overflow-x-auto my-6">
+                      <table className="min-w-full divide-y divide-border border border-border" {...props} />
+                    </div>
+                  ),
+                  thead: (props) => <thead className="bg-muted" {...props} />,
+                  tbody: (props) => <tbody className="divide-y divide-border" {...props} />,
+                  tr: (props) => <tr className="hover:bg-muted/50" {...props} />,
+                  th: (props) => <th className="px-4 py-3 text-left text-sm font-semibold" {...props} />,
+                  td: (props) => <td className="px-4 py-3 text-sm" {...props} />,
                 }}
               >
                 {section.content}

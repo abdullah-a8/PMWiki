@@ -1,0 +1,23 @@
+# Files to ignore during Vercel deployment
+
+# Environment files (use Vercel dashboard for env vars)
+.env
+.env.local
+.env.production
+
+# Node modules (will be installed during build)
+node_modules
+
+# Development files
+*.log
+.DS_Store
+
+# IDE files
+.vscode
+.idea
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx

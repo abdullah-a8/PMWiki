@@ -156,24 +156,20 @@ export function HomePage() {
             try {
               const event = JSON.parse(jsonStr);
 
-              console.log('📦 SSE Event received:', event.type, event);
-
               if (event.type === 'metadata') {
-                console.log('✅ Metadata event - Primary sources:', event.primary_sources?.length, 'Additional:', event.additional_context?.length);
                 setPrimarySources(event.primary_sources || []);
                 setAdditionalContext(event.additional_context || []);
                 setIsLoading(false);
               } else if (event.type === 'chunk') {
                 setStreamedAnswer(prev => prev + event.content);
               } else if (event.type === 'done') {
-                console.log('✅ Stream completed');
+                // Stream complete
               } else if (event.type === 'error') {
-                console.error('❌ Server error:', event.message);
                 setError(event.message);
                 setIsLoading(false);
               }
             } catch (parseError) {
-              console.error('❌ Failed to parse SSE event:', parseError, 'Raw:', jsonStr.substring(0, 100) + '...');
+              console.error('Failed to parse SSE event:', parseError);
             }
           }
         }

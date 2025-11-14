@@ -3,13 +3,30 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.db.database import get_db, check_db_connection
 from app.core.config import settings
+from app.services.voyage_service import get_voyage_service
+from app.services.qdrant_service import get_qdrant_service
+from app.services.groq_service import get_groq_service
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
 @router.get("/health")
 async def health_check():
-    """Basic health check endpoint"""
+    """
+    Basic health check endpoint.
+    Also keeps services warm by maintaining singleton references.
+    """
+    try:
+        # Keep services warm (singleton pattern - no API calls, just returns cached instances)
+        get_voyage_service()
+        get_qdrant_service()
+        get_groq_service()
+    except Exception as e:
+        logger.warning(f"Service warming failed during health check: {e}")
+
     return {"status": "healthy", "service": "PMWiki RAG API", "version": settings.VERSION}
 
 

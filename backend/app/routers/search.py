@@ -217,12 +217,17 @@ async def semantic_search_stream(
                 }
 
             # Send initial metadata with sources
+            primary_sources = [format_source(c) for c in primary_chunks]
+            additional_context = [format_source(c) for c in additional_chunks]
+
             metadata_event = {
                 'type': 'metadata',
                 'query': request.query,
-                'primary_sources': [format_source(c) for c in primary_chunks],
-                'additional_context': [format_source(c) for c in additional_chunks]
+                'primary_sources': primary_sources,
+                'additional_context': additional_context
             }
+
+            logger.info(f"📤 Sending metadata: {len(primary_sources)} primary, {len(additional_context)} additional")
             yield f"data: {json.dumps(metadata_event)}\n\n"
 
             # Step 5: Build prompt and stream LLM response

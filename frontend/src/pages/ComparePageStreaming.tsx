@@ -111,17 +111,27 @@ export function ComparePageStreaming() {
         throw new Error("Failed to get response reader");
       }
 
+      let buffer = ''; // Buffer for incomplete lines across chunks
+
       while (true) {
         const { done, value } = await reader.read();
 
         if (done) break;
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
+        // Decode chunk with streaming flag to handle partial UTF-8 sequences
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete lines (ending with \n)
+        const lines = buffer.split('\n');
+
+        // Keep the last incomplete line in the buffer
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
-            const jsonStr = line.slice(6);
+            const jsonStr = line.slice(6).trim();
+            if (!jsonStr) continue; // Skip empty data lines
+
             try {
               const event = JSON.parse(jsonStr);
 

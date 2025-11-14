@@ -132,34 +132,48 @@ export function HomePage() {
         throw new Error("Failed to get response reader");
       }
 
+      let buffer = ''; // Buffer for incomplete lines across chunks
+
       while (true) {
         const { done, value } = await reader.read();
 
         if (done) break;
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
+        // Decode chunk with streaming flag to handle partial UTF-8 sequences
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete lines (ending with \n)
+        const lines = buffer.split('\n');
+
+        // Keep the last incomplete line in the buffer
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
-            const jsonStr = line.slice(6);
+            const jsonStr = line.slice(6).trim();
+            if (!jsonStr) continue; // Skip empty data lines
+
             try {
               const event = JSON.parse(jsonStr);
 
+              console.log('📦 SSE Event received:', event.type, event);
+
               if (event.type === 'metadata') {
+                console.log('✅ Metadata event - Primary sources:', event.primary_sources?.length, 'Additional:', event.additional_context?.length);
                 setPrimarySources(event.primary_sources || []);
                 setAdditionalContext(event.additional_context || []);
-                setIsLoading(false); // Stop loading once sources are received
+                setIsLoading(false);
               } else if (event.type === 'chunk') {
                 setStreamedAnswer(prev => prev + event.content);
               } else if (event.type === 'done') {
-                // Stream complete
+                console.log('✅ Stream completed');
               } else if (event.type === 'error') {
+                console.error('❌ Server error:', event.message);
                 setError(event.message);
                 setIsLoading(false);
               }
-            } catch {
-              // Silent fail for parse errors
+            } catch (parseError) {
+              console.error('❌ Failed to parse SSE event:', parseError, 'Raw:', jsonStr.substring(0, 100) + '...');
             }
           }
         }
